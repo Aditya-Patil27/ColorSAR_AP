@@ -1,8 +1,9 @@
 """
 ColorSAR - train Model 1 (optical L -> a/b).
 
-Defaults: every pair of the training scenes, 20 epochs, batch 32, AdamW 5e-4 (encoder
-x0.1) with cosine decay, color-bin loss, rot90/flip augmentation, mixed precision.
+Defaults: every pair of the training scenes, 10 epochs, batch 32, AdamW 5e-4 with cosine
+decay, ImageNet encoder frozen, color-bin loss (no rebalancing), decoding temperature
+picked on the val scenes, rot90/flip augmentation, mixed precision.
 Multiple GPUs are used automatically (DataParallel). All logic lives in
 train_colorizer.py; see it for every option.
 

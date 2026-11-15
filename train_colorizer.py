@@ -4,10 +4,11 @@ ColorSAR - colorizer training (Models 1 and 3 share this one script)
     Model 1 : L of the optical (s2) image  -> a/b of the same image
     Model 3 : the SAR (s1) tile (3 despeckling levels) -> L AND a/b of the s2 image
 
-Network: ImageNet ResNet-50, fine-tuned at a lower learning rate than the U-Net
-decoder (encoder BatchNorm statistics frozen), predicting at the full 256x256 input
-resolution (model_architecture.py). a/b: class-rebalanced color-bin classification;
-L (Model 3): L1. Mixed precision on CUDA. Train_model1.py / Train_model3.py call this
+Network: ImageNet ResNet-50 encoder (frozen for Model 1, fine-tuned at 0.05x the
+decoder learning rate for Model 3; BatchNorm statistics always frozen) and a U-Net
+decoder predicting at the full 256x256 input resolution (model_architecture.py).
+a/b: color-bin classification, decoded at the temperature that gives the lowest val
+a/b RMSE; L (Model 3): L1. Mixed precision on CUDA. Train_model1.py / Train_model3.py call this
 with each model's defaults; the Kaggle kernel runs them.
 
 Splits: whole scenes (splits.scene_split). The test scenes are never touched here;
@@ -44,8 +45,8 @@ matplotlib.use("Agg")
 from matplotlib import pyplot as plt  # noqa: E402
 
 DEFAULTS = {
-    1: dict(epochs=20, out="model1_run", predict_L=False),
-    3: dict(epochs=30, out="model3_run", predict_L=True),
+    1: dict(epochs=10, out="model1_run", predict_L=False, encoder_lr_mult=0.0),
+    3: dict(epochs=15, out="model3_run", predict_L=True, encoder_lr_mult=0.05),
 }
 
 
@@ -61,10 +62,14 @@ def build_parser(model):
     ap.add_argument("--batch_size", type=int, default=32,
                     help="total batch (split across GPUs with DataParallel)")
     ap.add_argument("--lr", type=float, default=5e-4, help="decoder learning rate")
-    ap.add_argument("--encoder_lr_mult", type=float, default=0.1,
+    ap.add_argument("--encoder_lr_mult", type=float, default=d["encoder_lr_mult"],
                     help="encoder learning rate = lr * this (0 = frozen encoder)")
     ap.add_argument("--bin_grid", type=float, default=10.0, help="color bin size in Lab units")
-    ap.add_argument("--T", type=float, default=0.38, help="annealed-mean temperature")
+    ap.add_argument("--T_grid", type=float, nargs="+", default=[0.38, 0.5, 0.7, 1.0],
+                    help="annealed-mean temperatures tried on the val scenes each epoch; the best "
+                         "one is stored in the checkpoint (1.0 = plain mean, lowest RMSE when unsure)")
+    ap.add_argument("--rebal_lam", type=float, default=1.0,
+                    help="Zhang class rebalancing: 0.5 = boost rare colors, 1.0 = off")
     ap.add_argument("--L_weight", type=float, default=1.0, help="weight of the L1 loss on L")
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--seed", type=int, default=42)
@@ -90,8 +95,9 @@ def augment(gray, rgb, ab):
 class Objective:
     """Training loss + a loss-independent validation error, for one model config."""
 
-    def __init__(self, meta, centers, weights, L_weight=1.0):
+    def __init__(self, meta, centers, weights, L_weight=1.0, T_grid=(0.38,)):
         self.meta, self.centers, self.weights, self.L_weight = meta, centers, weights, L_weight
+        self.T_grid = list(T_grid)
 
     def loss(self, raw, ab, L_true):
         raw = raw.float()
@@ -104,12 +110,13 @@ class Objective:
 
     @torch.no_grad()
     def errors(self, raw, ab, L_true, chunk=8):
-        """Per-batch sums of squared a/b and L errors in Lab units (decoded output)."""
-        se_ab = se_L = 0.0
+        """Per-batch sums of squared errors in Lab units: a/b at each T of T_grid, and L."""
+        se_ab, se_L = [0.0] * len(self.T_grid), 0.0
         for i in range(0, raw.shape[0], chunk):
-            L_p, ab_p = decode_output(raw[i:i + chunk], self.meta, self.centers)
-            d = ab_to_lab_units(ab_p) - ab_to_lab_units(ab[i:i + chunk])
-            se_ab += d.pow(2).mean(dim=(1, 2, 3)).sum().item()
+            true = ab_to_lab_units(ab[i:i + chunk])
+            for j, T in enumerate(self.T_grid):
+                L_p, ab_p = decode_output(raw[i:i + chunk], dict(self.meta, T=T), self.centers)
+                se_ab[j] += (ab_to_lab_units(ab_p) - true).pow(2).mean(dim=(1, 2, 3)).sum().item()
             if L_p is not None:
                 se_L += ((L_p - L_true[i:i + chunk]) * 50).pow(2).mean(dim=(1, 2, 3)).sum().item()
         return se_ab, se_L
@@ -119,7 +126,7 @@ def run_epoch(loader, net, parallel, meta, obj, device, optimizer=None, scaler=N
               train_encoder=True, amp=False):
     training = optimizer is not None
     net.set_mode(training, train_encoder)
-    tot, n_batches, se_ab, se_L, n = 0.0, 0, 0.0, 0.0, 0
+    tot, n_batches, se_ab, se_L, n = 0.0, 0, None, 0.0, 0
     with torch.set_grad_enabled(training):
         for gray, rgb, ab, _ in loader:
             gray, rgb, ab = (t.to(device, non_blocking=True) for t in (gray, rgb, ab))
@@ -137,12 +144,13 @@ def run_epoch(loader, net, parallel, meta, obj, device, optimizer=None, scaler=N
                 scaler.update()
             else:
                 a, b = obj.errors(raw, ab, L_true)
-                se_ab += a; se_L += b; n += raw.shape[0]
+                se_ab = a if se_ab is None else [x + y for x, y in zip(se_ab, a)]
+                se_L += b; n += raw.shape[0]
             tot += loss.item(); n_batches += 1
     loss = tot / max(n_batches, 1)
     if training:
         return loss, None, None
-    return loss, (se_ab / max(n, 1)) ** 0.5, (se_L / max(n, 1)) ** 0.5
+    return loss, [(x / max(n, 1)) ** 0.5 for x in se_ab], (se_L / max(n, 1)) ** 0.5
 
 
 @torch.no_grad()
@@ -205,18 +213,19 @@ def main(model, argv=None):
     ds = PairDataset(subsample(train_pairs, 1000, seed=1), load_sar=False)
     ab_s = torch.cat([ds[i][2][:, ::4, ::4].reshape(2, -1).T for i in range(len(ds))])
     centers, prior = compute_bins(ab_s, grid=args.bin_grid)
-    weights = class_weights(centers, prior)
+    weights = class_weights(centers, prior, lam=args.rebal_lam)
     centers, weights = centers.to(device), weights.to(device)
     print(f"Color bins: {len(centers)} occupied {args.bin_grid:g}-unit cells "
           f"(weights {weights.min():.2f}..{weights.max():.2f})")
 
     train_encoder = args.encoder_lr_mult > 0
     meta = {"model": model, "input": input_kind, "predict_L": args.predict_L,
-            "bins": centers.cpu().tolist(), "T": args.T, "split": record,
+            "bins": centers.cpu().tolist(), "T": args.T_grid[0], "split": record,
+            "rebal_lam": args.rebal_lam,
             "augment": args.augment, "epochs": args.epochs, "lr": args.lr,
             "encoder_lr_mult": args.encoder_lr_mult, "batch_size": args.batch_size,
             "amp": amp, "n_train": len(train_pairs)}
-    obj = Objective(meta, centers, weights, args.L_weight)
+    obj = Objective(meta, centers, weights, args.L_weight, args.T_grid)
 
     net = Colorizer(out_channels(meta), pretrained=True).to(device)
     for p in net.encoder.parameters():
@@ -236,24 +245,26 @@ def main(model, argv=None):
     scaler = torch.amp.GradScaler(device.type, enabled=amp)
 
     ckpt = os.path.join(args.out, f"model_{model}.pth")
-    hist = {k: [] for k in ("train_loss", "val_loss", "val_ab_rmse", "val_L_rmse", "val_score", "lr")}
+    hist = {k: [] for k in ("train_loss", "val_loss", "val_ab_rmse", "val_L_rmse", "val_score", "lr", "val_T")}
     best, t0 = float("inf"), time.time()
     for epoch in range(args.epochs):
         lr = optimizer.param_groups[0]["lr"]
         tr, _, _ = run_epoch(train_loader, net, parallel, meta, obj, device, optimizer, scaler,
                              aug=args.augment, train_encoder=train_encoder, amp=amp)
-        va, ab_rmse, L_rmse = run_epoch(val_loader, net, parallel, meta, obj, device, amp=amp)
+        va, ab_by_T, L_rmse = run_epoch(val_loader, net, parallel, meta, obj, device, amp=amp)
         scheduler.step()
+        j = min(range(len(ab_by_T)), key=ab_by_T.__getitem__)
+        ab_rmse, T = ab_by_T[j], args.T_grid[j]
         score = ab_rmse + (L_rmse if args.predict_L else 0.0)
-        for k, v in zip(hist, (tr, va, ab_rmse, L_rmse, score, lr)):
+        for k, v in zip(hist, (tr, va, ab_rmse, L_rmse, score, lr, T)):
             hist[k].append(v)
         flag = ""
         if score < best:
             best = score
-            save_checkpoint(ckpt, net, dict(meta, best_epoch=epoch + 1, best_val=score))
+            save_checkpoint(ckpt, net, dict(meta, T=T, best_epoch=epoch + 1, best_val=score))
             flag = "  <- best, saved"
         print(f"Epoch {epoch+1}/{args.epochs}  train={tr:.4f}  val={va:.4f}  "
-              f"val ab RMSE={ab_rmse:.2f}" + (f"  L RMSE={L_rmse:.2f}" if args.predict_L else "")
+              f"val ab RMSE={ab_rmse:.2f} (T={T:g})" + (f"  L RMSE={L_rmse:.2f}" if args.predict_L else "")
               + f"  lr={lr:.1e}  ({(time.time()-t0)/60:.1f} min){flag}", flush=True)
 
     with open(os.path.join(args.out, "history.json"), "w") as f:

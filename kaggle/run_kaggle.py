@@ -1,6 +1,7 @@
 """
-ColorSAR - Kaggle GPU job: train the new Models 3 and 1 and, for a fair comparison,
-retrain the previous recipe on the same held-out scenes; evaluate all of them.
+ColorSAR - Kaggle GPU job: train and evaluate the tuned Models 3 and 1 (two variants
+each) on the held-out scenes. v3 of this kernel also retrained the previous recipe on
+the same scenes; its numbers are in model*_run/metrics_legacy_same_scenes.json.
 
 Runs as a Kaggle "script" kernel (see kernel-metadata.json) with two inputs attached:
     requiemonk/sentinel12-image-pairs-segregated-by-terrain   the dataset (v_2)
@@ -90,7 +91,6 @@ if __name__ == "__main__":
         dst = os.path.join(WORK, *os.path.basename(src).split("__"))
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
-    LEG = os.path.join(WORK, "legacy")
     os.makedirs(RESULTS, exist_ok=True)
 
     smoke = MODE == "smoke"
@@ -100,50 +100,29 @@ if __name__ == "__main__":
     L = lambda n: os.path.join(RESULTS, n + ".log")  # noqa: E731
     h = (lambda x: 0.0) if smoke else (lambda x: x)  # noqa: E731
 
-    # 1. new Model 3
-    if run("train new model 3", ["Train_model3.py", "--out", "new3"] + TR + R, L("train_new3"),
-           need_h=h(3.0), stop_h=TRAIN_STOP_H):
-        ck = ["--model", "3", "--checkpoint", "new3/model_3.pth"]
-        run("eval new 3", ["evaluate.py"] + ck + EV + ["--out", "new3/metrics_test.json"], L("eval_new3"))
-        run("eval new 3 + TTA", ["evaluate.py"] + ck + EV + ["--tta", "--out", "new3/metrics_test_tta.json"],
-            L("eval_new3_tta"), need_h=h(0.3))
-        run("eval new 3 + TTA @224", ["evaluate.py"] + ck + EV +
-            ["--tta", "--eval_size", "224", "--out", "new3/metrics_test_tta_224.json"],
-            L("eval_new3_tta_224"), need_h=h(0.3))
-        run("eval new 3 + TTA (val)", ["evaluate.py"] + ck + EV +
-            ["--tta", "--split", "val", "--out", "new3/metrics_val_tta.json"],
-            L("eval_new3_val"), need_h=h(0.3))
+    # Tuned run (v4): two variants per model, each trained with the decoding temperature
+    # picked on the val scenes and no class rebalancing. The winner is the variant with
+    # the best val score (history.json); the test numbers of both are reported. The old
+    # recipe is not retrained: v3 already scored it on the same test scenes.
+    JOBS = [  # (run dir, model, extra train args, hours needed)
+        ("m3_enc05", 3, [], 1.6),                                    # default: encoder x0.05
+        ("m3_frozen", 3, ["--encoder_lr_mult", "0"], 1.3),
+        ("m1_frozen", 1, [], 0.9),                                   # default: frozen encoder
+        ("m1_enc02", 1, ["--encoder_lr_mult", "0.02"], 1.0),
+    ]
+    for out, m, extra, need in JOBS:
+        script = f"Train_model{m}.py"
+        if run(f"train {out}", [script, "--out", out] + extra + TR + R, L("train_" + out),
+               need_h=h(need), stop_h=TRAIN_STOP_H):
+            ck = ["--model", str(m), "--checkpoint", f"{out}/model_{m}.pth"]
+            run(f"eval {out}", ["evaluate.py"] + ck + EV + ["--out", f"{out}/metrics_test.json"],
+                L("eval_" + out), need_h=h(0.2))
+            run(f"eval {out} + TTA", ["evaluate.py"] + ck + EV +
+                ["--tta", "--out", f"{out}/metrics_test_tta.json"], L(f"eval_{out}_tta"), need_h=h(0.4))
+            run(f"eval {out} + TTA @224", ["evaluate.py"] + ck + EV +
+                ["--tta", "--eval_size", "224", "--out", f"{out}/metrics_test_tta_224.json"],
+                L(f"eval_{out}_tta_224"), need_h=h(0.4))
+        save(WORK, out)
 
-    save(WORK, "new3")
-
-    # 2. old Model 3 recipe, same scenes
-    if run("train legacy model 3", ["Train_model3.py", "--out", "legacy3"] + TR + R,
-           L("train_legacy3"), cwd=LEG, need_h=h(2.5), stop_h=TRAIN_STOP_H):
-        run("eval legacy 3", ["evaluate.py", "--model", "3", "--checkpoint", "legacy3/model_3.pth"]
-            + EV + ["--out", "legacy3/metrics_test.json"], L("eval_legacy3"), cwd=LEG)
-
-    save(LEG, "legacy3")
-
-    # 3. new Model 1
-    if run("train new model 1", ["Train_model1.py", "--out", "new1"] + TR + R, L("train_new1"),
-           need_h=h(2.0), stop_h=TRAIN_STOP_H):
-        ck = ["--model", "1", "--checkpoint", "new1/model_1.pth"]
-        run("eval new 1", ["evaluate.py"] + ck + EV + ["--out", "new1/metrics_test.json"], L("eval_new1"))
-        run("eval new 1 + TTA", ["evaluate.py"] + ck + EV + ["--tta", "--out", "new1/metrics_test_tta.json"],
-            L("eval_new1_tta"), need_h=h(0.3))
-        run("eval new 1 + TTA @224", ["evaluate.py"] + ck + EV +
-            ["--tta", "--eval_size", "224", "--out", "new1/metrics_test_tta_224.json"],
-            L("eval_new1_tta_224"), need_h=h(0.3))
-
-    save(WORK, "new1")
-
-    # 4. old Model 1b recipe (bins + adapters + ImageNet norm + augmentation), same scenes
-    if run("train legacy model 1b", ["Train_model1.py", "--out", "legacy1b", "--loss", "bins",
-                                     "--train_adapters", "--imagenet_norm", "--augment"] + TR + R,
-           L("train_legacy1b"), cwd=LEG, need_h=h(2.0), stop_h=TRAIN_STOP_H):
-        run("eval legacy 1b", ["evaluate.py", "--model", "1", "--checkpoint", "legacy1b/model_1.pth"]
-            + EV + ["--out", "legacy1b/metrics_test.json"], L("eval_legacy1b"), cwd=LEG)
-
-    save(LEG, "legacy1b")
     shutil.rmtree(WORK, ignore_errors=True)   # keep the kernel output small
     print(f"\nresults ({hours():.2f} h):", sorted(os.listdir(RESULTS)))

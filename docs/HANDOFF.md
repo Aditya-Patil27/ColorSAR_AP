@@ -1,5 +1,31 @@
 # ColorSAR handoff (2026-11-15)
 
+## UPDATE 18:40 IST: v3 done, tuned run v5 running (read this first)
+- v3 (full) finished COMPLETE. Its logs and metrics are in `C:\Users\app27\Downloads\kaggle_full\results`.
+  The v3 .pth files were NOT downloaded, and later pushes replaced the latest output; only the
+  Kaggle web UI version history may still have them.
+- v3 result: the new recipe did not beat legacy. Measured against each script's own mean-color
+  baseline, Model 1 was a tie (-0.10 vs -0.04) and Model 3 was worse (+5.40 vs +3.57). The two
+  scripts compute baselines differently: mean color is 8.78 in legacy and 9.19 in the new one.
+- Fixes in the code (uncommitted):
+  - val-tuned T (`--T_grid`, stored in the checkpoint meta);
+  - `--rebal_lam` (default 1.0 = off);
+  - Model 1: frozen encoder, 10 epochs;
+  - Model 3: encoder at 0.05x, 15 epochs.
+- run_kaggle.py now trains 4 variants: m3_enc05, m3_frozen, m1_frozen, m1_enc02. Each gets
+  eval, eval with TTA, and eval with TTA at 224 px. Legacy is not retrained.
+- v4 was a smoke run and was clean. **v5 = full**, pushed at 18:39 IST and expected to take ~5 h.
+- **README.md is already rewritten** with honest v3 numbers. Add the v5 rows at the
+  `<!-- RESULTS-V5 -->` marker and remove the marker.
+- **When v5 finishes:**
+  1. Pick the winner per model by best `val_score` in history.json, not by test.
+  2. Download the outputs in full, including .pth.
+  3. Copy the winners into model3_run/ and model1_run/.
+  4. Copy the legacy metrics_test.json from kaggle_full into `metrics_legacy_same_scenes.json`.
+  5. Update the README tables and the "What the numbers say" section, then report to the user.
+- The steps below are from before v3 finished; the job names have changed.
+
+
 ## Goal
 The user asked to "check ColorSAR and see if we can improve the result", then approved "go, use Kaggle".
 Plan: fix the leaky split, build a stronger model, then train and evaluate it on a Kaggle GPU. The

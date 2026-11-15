@@ -14,9 +14,10 @@ Inputs (meta["input"])
 Output (head of model_architecture.Colorizer)
     predict_L: the first channel is L (tanh) - Model 3 predicts brightness too
     then Q color-bin logits (Zhang et al. 2016, "Colorful Image Colorization"):
-    trained with class-rebalanced cross-entropy on soft-encoded targets, decoded with
-    the annealed mean (temperature T). Avoids the desaturated "average color" that
-    MSE regression converges to when the color is uncertain.
+    trained with cross-entropy on soft-encoded targets (optionally class-rebalanced),
+    decoded with the annealed mean at temperature T. T is picked on the validation
+    scenes and stored in the checkpoint: T=1 is the plain mean (lowest error when the
+    color is uncertain), lower T gives more vivid but riskier colors.
 """
 import math
 
