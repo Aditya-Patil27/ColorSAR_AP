@@ -1,31 +1,95 @@
 """
-ColorSAR - train / val / test splits
+ColorSAR - train / val / test split by scene
 
-Canonical split (used by every training script from now on)
-    Each pair is assigned by a stable SHA-1 hash of "<terrain>/<s1 filename>":
-    10% test, 10% val, 80% train. The assignment does not depend on RNG state,
-    the machine, the file order or --n_images, so the DnCNN, Model 1 and Model 2
-    all hold out the *same* test pairs and evaluate.py can score on images that
-    no stage of the pipeline ever trained on.
+Patches cut from one Sentinel scene look alike, so a model that trained on some of
+them has effectively seen the rest. Whole scenes are therefore held out: every
+patch of a scene lands in the same split, and each terrain contributes at least one
+scene to val and to test.
 
-split.json (written next to every checkpoint)
-    {"train": [keys...], "val": [keys...], "rule": "...", "upstream": "<other split.json>"}
-    evaluate.py scores on every pair that is in neither train nor val of the
-    checkpoint *and* of the upstream stage (Model 2's DnCNN).
+A file name such as ROIs1868_summer_s1_59_p10.png belongs to scene
+"ROIs1868_summer_59". A scene that appears under two terrain folders is assigned
+by the terrain holding most of its patches, and all of its patches move together.
 
-The shipped checkpoints predate this module; `python splits.py --legacy` rebuilds
-their split.json files from the exact recipe each one was trained with.
+For each terrain the held-out scenes are the subset whose patch count is closest to
+the requested fraction. The choice depends only on the file names, so it is the
+same on every machine and for every model.
+
+Limit: the data holds one summer scene, so no split can test a season the model
+has not seen.
+
+    python splits.py --root v_2      # print the scenes of each split
 """
 import argparse
-import hashlib
 import json
 import os
+import re
+from collections import Counter, defaultdict
 
 import numpy as np
-import torch
 
 TEST_FRAC = 0.10
 VAL_FRAC = 0.10
+
+_S1_NAME = re.compile(r"^(?P<roi>.+)_s1_(?P<scene>\d+)_p\d+\.png$")
+
+
+def scene_of(pair):
+    """(sar_path, optical_path, terrain) -> scene id, e.g. 'ROIs1868_summer_59'."""
+    name = os.path.basename(pair[0])
+    m = _S1_NAME.match(name)
+    if m is None:
+        raise ValueError(f"cannot read a scene id from {name!r}; "
+                         "expected <roi>_s1_<scene>_p<patch>.png")
+    return f"{m['roi']}_{m['scene']}"
+
+
+def _closest_subset(sizes, target):
+    """Names of the non-empty subset of `sizes` (name -> count) whose total is closest to target."""
+    reach = {0: ()}
+    for name in sorted(sizes):
+        for total, chosen in list(reach.items()):
+            reach.setdefault(total + sizes[name], chosen + (name,))
+    del reach[0]
+    return reach[min(reach, key=lambda total: (abs(total - target), total))]
+
+
+def scene_split(pairs):
+    """-> {"train": [...], "val": [...], "test": [...]} lists of pairs, whole scenes each."""
+    by_scene = defaultdict(list)
+    for p in pairs:
+        by_scene[scene_of(p)].append(p)
+
+    by_terrain = defaultdict(dict)
+    for scene, members in by_scene.items():
+        counts = Counter(p[2] for p in members)
+        primary = min(counts, key=lambda t: (-counts[t], t))
+        by_terrain[primary][scene] = len(members)
+
+    where = {}
+    for terrain, sizes in sorted(by_terrain.items()):
+        if len(sizes) < 3:
+            raise ValueError(f"terrain {terrain!r} has {len(sizes)} scene(s); holding out whole "
+                             "scenes for val and test needs at least 3")
+        total = sum(sizes.values())
+        rest = dict(sizes)
+        for name, frac in (("test", TEST_FRAC), ("val", VAL_FRAC)):
+            spare = len(rest) - (2 if name == "test" else 1)
+            smallest_first = dict(sorted(rest.items(), key=lambda kv: (kv[1], kv[0])))
+            chosen = _closest_subset(rest, frac * total)
+            if len(chosen) > spare:
+                chosen = tuple(smallest_first)[:spare]
+            for scene in chosen:
+                where[scene] = name
+                del rest[scene]
+
+    out = {"train": [], "val": [], "test": []}
+    for scene, members in sorted(by_scene.items()):
+        out[where.get(scene, "train")].extend(members)
+    return out
+
+
+def scenes(pairs):
+    return sorted({scene_of(p) for p in pairs})
 
 
 def pair_key(pair):
@@ -33,19 +97,18 @@ def pair_key(pair):
     return f"{pair[2]}/{os.path.basename(pair[0])}"
 
 
-def _bucket(key):
-    """Stable value in [0, 1) derived from the key only."""
-    return int(hashlib.sha1(key.encode("utf-8")).hexdigest()[:8], 16) / 0x100000000
+def split_record(split):
+    """Scenes of each part of a split (stored in checkpoints and split.json)."""
+    return {name: scenes(part) for name, part in split.items()}
 
 
-def canonical_split(pairs):
-    """-> {"train": [...], "val": [...], "test": [...]} lists of pairs."""
-    out = {"train": [], "val": [], "test": []}
-    for p in pairs:
-        u = _bucket(pair_key(p))
-        name = "test" if u < TEST_FRAC else "val" if u < TEST_FRAC + VAL_FRAC else "train"
-        out[name].append(p)
-    return out
+def write_split(path, split, used=None):
+    """split.json: the scenes of each part, plus the exact pairs used (`used`: name -> pairs)."""
+    data = {"rule": "scene split (splits.scene_split)", "scenes": split_record(split)}
+    for name, part in (used or {}).items():
+        data[name] = sorted(pair_key(p) for p in part)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=0)
 
 
 def subsample(pairs, n, seed=42):
@@ -56,96 +119,19 @@ def subsample(pairs, n, seed=42):
     return [pairs[i] for i in sorted(idx)]
 
 
-def write_split(path, train, val, rule, upstream=None):
-    data = {"rule": rule, "train": sorted(pair_key(p) for p in train),
-            "val": sorted(pair_key(p) for p in val)}
-    if upstream:
-        data["upstream"] = upstream
-    with open(path, "w") as f:
-        json.dump(data, f, indent=0)
-
-
-def read_split(path):
-    with open(path) as f:
-        return json.load(f)
-
-
-def heldout(pairs, split_path):
-    """Pairs never trained on by the checkpoint whose split.json is `split_path`.
-
-    Follows the "upstream" link (Model 2 -> its DnCNN) so a pair counts as held out
-    only if no stage saw it in train or val. If that leaves nothing (the shipped
-    Model 1 trained on 90% and validated on the other 10% of the data), falls back
-    to the checkpoint's own val set and says so - val was used to pick the best
-    epoch, so it is a slightly optimistic estimate.
-
-    Returns (pairs, description).
-    """
-    seen, val_only, path, chain = set(), None, split_path, []
-    while path:
-        s = read_split(path)
-        seen.update(s["train"]); seen.update(s["val"])
-        if val_only is None:
-            val_only = set(s["val"])
-        chain.append(os.path.basename(os.path.dirname(path)) + "/" + os.path.basename(path))
-        up = s.get("upstream")
-        path = os.path.join(os.path.dirname(path), up) if up else None
-
-    test = [p for p in pairs if pair_key(p) not in seen]
-    if test:
-        return test, f"held-out test set ({len(test)} pairs unseen by {' + '.join(chain)})"
-    val = [p for p in pairs if pair_key(p) in val_only]
-    return val, (f"VALIDATION set ({len(val)} pairs) - no unseen pairs exist for this "
-                 "checkpoint; val picked the best epoch, so this is slightly optimistic")
-
-
-# --------------------------------------------------------------------------- legacy
-def legacy_splits(pairs):
-    """Rebuild the exact splits the shipped checkpoints were trained with.
-
-    Model 1 (ColorSAR_Kaggle_Training.ipynb, original version): all 16,000 sorted s2
-        paths, random_split 90/10 with torch seed 42.
-    DnCNN (train_dncnn.py, original version): permutation(seed 42)[:10000], 80/20.
-    Model 2 (Train_model2.py, original version): permutation(seed 42)[:8000], 80/20.
-    """
-    from torch.utils.data import random_split
-
-    def rsplit(items, n_val):
-        tr, va = random_split(range(len(items)), [len(items) - n_val, n_val],
-                              generator=torch.Generator().manual_seed(42))
-        return [items[i] for i in tr.indices], [items[i] for i in va.indices]
-
-    by_s2 = sorted(pairs, key=lambda p: p[1])
-    m1 = rsplit(by_s2, max(int(0.10 * len(by_s2)), 64))
-
-    perm = np.random.RandomState(42).permutation(len(pairs))
-    dn_sub = [pairs[i] for i in perm[:10000]]
-    dn = rsplit(dn_sub, max(int(0.2 * len(dn_sub)), 1))
-    m2_sub = [pairs[i] for i in perm[:8000]]
-    m2 = rsplit(m2_sub, max(int(0.2 * len(m2_sub)), 1))
-    return {"model1": m1, "dncnn": dn, "model2": m2}
-
-
 if __name__ == "__main__":
     from color_utils import find_pairs
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="v_2")
-    ap.add_argument("--legacy", action="store_true",
-                    help="write split.json files for the shipped model1_run/model2_run checkpoints")
     args = ap.parse_args()
 
     pairs = find_pairs(args.root)
-    assert pairs, f"No s1/s2 pairs found under {args.root}"
-    c = canonical_split(pairs)
-    print({k: len(v) for k, v in c.items()})
-
-    if args.legacy:
-        s = legacy_splits(pairs)
-        rule = "legacy recipe reconstructed by splits.legacy_splits ({})"
-        write_split("model1_run/split.json", *s["model1"], rule.format("Kaggle notebook 90/10"))
-        write_split("model2_run/dncnn_split.json", *s["dncnn"], rule.format("train_dncnn 10000, 80/20"))
-        write_split("model2_run/split.json", *s["model2"], rule.format("Train_model2 8000, 80/20"),
-                    upstream="dncnn_split.json")
-        for f in ("model1_run/split.json", "model2_run/split.json"):
-            print(f, "->", heldout(pairs, f)[1])
+    if not pairs:
+        raise SystemExit(f"No s1/s2 pairs found under {args.root}")
+    for name, part in scene_split(pairs).items():
+        print(f"\n{name}: {len(part)} pairs ({100 * len(part) / len(pairs):.1f}%), "
+              f"{len(scenes(part))} scenes")
+        table = Counter((p[2], scene_of(p)) for p in part)
+        for (terrain, scene), n in sorted(table.items()):
+            print(f"  {terrain:<12}{scene:<28}{n:>6}")

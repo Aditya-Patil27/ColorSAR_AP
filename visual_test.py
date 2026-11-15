@@ -1,10 +1,10 @@
 """
 ColorSAR - Visual Sanity Check (untrained model)
 
-Runs a REAL image from the dataset through the encoder-decoder with RANDOM weights
-and saves the "colorization". It is expected to look like colored noise: the point
-is only that load -> Lab -> encoder -> decoder -> reconstruct -> save runs end to end.
-Uses the same model and preprocessing code as training (no private copies).
+Runs a REAL image from the dataset through the network with RANDOM weights and saves
+the "colorization". It is expected to look like colored noise: the point is only that
+load -> Lab -> network -> decode -> reconstruct -> save runs end to end. Uses the same
+model and preprocessing code as training (no private copies).
 
 Usage:
     python visual_test.py "v_2/agri/s2/some_image.png"
@@ -16,8 +16,9 @@ import numpy as np
 import torch
 from PIL import Image
 
-from color_utils import SIZE, lab_to_rgb, rgb_to_lab
-from model_architecture import ColorizationModel, Decoder, EnsembleEncoder, encoder_input
+from color_utils import SIZE, lab_to_rgb
+from model_architecture import Colorizer, out_channels
+from pipeline import predict
 
 import matplotlib  # noqa: E402
 matplotlib.use("Agg")
@@ -30,14 +31,14 @@ if __name__ == "__main__":
 
     print(f"Loading real image: {test_image}")
     rgb = cv2.resize(np.array(Image.open(test_image).convert("RGB")), (SIZE, SIZE))
-    L, _ = rgb_to_lab(rgb)
-    L = torch.from_numpy(L).unsqueeze(0)                          # (1,1,224,224)
+    rgb_t = torch.from_numpy(rgb.astype(np.float32) / 255.0).permute(2, 0, 1)[None]
 
     print("Building model (untrained / random weights)...")
-    model = ColorizationModel(EnsembleEncoder(pretrained=False), Decoder()).eval()
-    with torch.no_grad():
-        pred_ab = model(encoder_input(L))                         # (1,2,224,224) in [-1,1]
-    rgb_pred = lab_to_rgb(L, pred_ab)[0]
+    bins = [[a, b] for a in range(-40, 41, 10) for b in range(-40, 41, 10)]
+    meta = {"model": 1, "input": "optical_L", "predict_L": False, "bins": bins, "T": 0.38}
+    net = Colorizer(out_channels(meta), pretrained=False).eval()
+    L, ab = predict(net, meta, rgb=rgb_t)
+    rgb_pred = lab_to_rgb(L, ab)[0]
 
     fig, axes = plt.subplots(1, 2, figsize=(8, 4))
     axes[0].imshow(rgb); axes[0].set_title("Real Optical Image (ground truth)")

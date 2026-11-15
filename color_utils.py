@@ -1,5 +1,5 @@
 """
-ColorSAR - Shared helpers (dataset pairing, Lab conversions, the SAR -> L stage)
+ColorSAR - Shared helpers (dataset pairing, Lab conversions)
 
 Used by every training, evaluation and inference script, so they all agree on
 exactly how s1/s2 pairs are matched, how images are resized and how Lab channels
@@ -20,7 +20,7 @@ from PIL import Image
 from skimage.color import lab2rgb, rgb2lab
 from torch.utils.data import Dataset
 
-SIZE = 224  # the colorizers work on 224x224 inputs
+SIZE = 256  # the colorizers work at the tiles' native 256x256
 
 
 # --------------------------------------------------------------------------- pairing
@@ -58,10 +58,9 @@ def is_sentinel1_path(path):
 class PairDataset(Dataset):
     """One s1/s2 pair -> (sar_gray, rgb, ab, terrain).
 
-    sar_gray : (1,h,w) float in [0,1] at the file's NATIVE resolution (256 for v_2),
-               so the DnCNN can run on the scale it was trained on (see sar_to_L).
-    rgb      : (3,224,224) float in [0,1] - optical ground truth
-    ab       : (2,224,224) float in [-1,1] - optical a/b target
+    sar_gray : (1,h,w) float in [0,1] at the file's native resolution (256 for v_2)
+    rgb      : (3,SIZE,SIZE) float in [0,1] - optical ground truth
+    ab       : (2,SIZE,SIZE) float in [-1,1] - optical a/b target
     """
 
     def __init__(self, pairs, size=SIZE, load_sar=True):
@@ -79,7 +78,8 @@ class PairDataset(Dataset):
         else:
             gray = np.zeros((1, 1), dtype=np.float32)
         rgb = np.array(Image.open(opt_path).convert("RGB"))
-        rgb = cv2.resize(rgb, (self.size, self.size))
+        if rgb.shape[:2] != (self.size, self.size):
+            rgb = cv2.resize(rgb, (self.size, self.size))
         _, ab = rgb_to_lab(rgb)
         rgb_t = torch.from_numpy(rgb.astype(np.float32)).permute(2, 0, 1) / 255.0
         return torch.from_numpy(gray).unsqueeze(0), rgb_t, torch.from_numpy(ab), terrain
@@ -90,31 +90,6 @@ def resize_t(x, size=SIZE):
     if x.shape[-2:] == (size, size):
         return x
     return F.interpolate(x, size=(size, size), mode="bilinear", align_corners=False)
-
-
-def sar_to_L(gray, dncnn, dncnn_res="native", size=SIZE, need_native=False):
-    """SAR gray (N,1,h,w) in [0,1] -> (L for the colorizer at size x size, native gray).
-
-    dncnn_res="native": DnCNN runs on the full-resolution tile (the scale it was
-                        trained on), then the result is resized - used by new runs.
-    dncnn_res="224"   : resize first, then DnCNN - how the shipped model_2.pth was
-                        trained, kept so that checkpoint sees exactly its training input.
-    The second value is the (denoised) gray at the input's native resolution, used to
-    compose full-resolution output; it is None unless need_native=True.
-    """
-    if dncnn_res not in ("native", "224"):
-        raise ValueError(f"unknown dncnn_res: {dncnn_res!r}")
-    if dncnn is None:
-        return gray_to_L(resize_t(gray, size)), gray
-    native = None
-    with torch.no_grad():
-        if dncnn_res == "native" or need_native:
-            native = dncnn(gray).clamp(0.0, 1.0)
-        if dncnn_res == "native":
-            small = resize_t(native, size)
-        else:
-            small = dncnn(resize_t(gray, size)).clamp(0.0, 1.0)
-    return gray_to_L(small), native
 
 
 # --------------------------------------------------------------------------- Lab
@@ -168,22 +143,11 @@ def rgb_to_L(rgb):
     return (2.0 * (116.0 * _f_l(y) - 16.0) / 100.0 - 1.0).unsqueeze(1)
 
 
-def gray_to_L(gray):
-    """Grayscale tensor in [0,1] (any leading dims, HxW at the end) -> Lab L in [-1, 1].
-
-    Mathematically identical to `rgb2lab(cv2.merge([g, g, g]))[..., 0]` (what
-    gray_model.ipynb uses), but pure torch, so it also runs on the *denoised*
-    gray batch produced by DnCNN on the GPU inside the training loop.
-    """
-    c = gray.clamp(0.0, 1.0)
-    return 2.0 * (116.0 * _f_l(_srgb_to_linear(c)) - 16.0) / 100.0 - 1.0
-
-
 def lab_to_rgb(L, ab):
     """Normalized (N,1,H,W)/(N,2,H,W) tensors -> (N,H,W,3) float RGB in [0,1].
 
     If ab has a lower resolution than L it is bilinearly upsampled first, so a
-    224x224 color prediction can be composed with a full-resolution L.
+    low-resolution color prediction can be composed with a full-resolution L.
     """
     if ab.shape[-2:] != L.shape[-2:]:
         ab = F.interpolate(ab, size=L.shape[-2:], mode="bilinear", align_corners=False)

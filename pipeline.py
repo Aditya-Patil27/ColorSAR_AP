@@ -1,36 +1,32 @@
 """
 ColorSAR - model inputs, output decoding, color bins and losses
 
-One place that knows how each kind of checkpoint turns a batch into encoder input and
-how its raw decoder output becomes (L, a/b). Training, evaluation and inference all
-call these functions, so they cannot disagree.
+One place that knows how a batch becomes network input and how the raw head output
+becomes (L, a/b). Training, evaluation and inference all call these functions, so
+they cannot disagree.
 
 Inputs (meta["input"])
-    "optical_L"   Model 1: L of the optical (s2) image
-    "sar_dncnn_L" Model 2: L of the SAR (s1) tile after the DnCNN
-    "sar3"        Model 3: the SAR tile itself as 3 channels - raw, Gaussian-smoothed
-                  (sigma 1) and (sigma 2.5), i.e. the image at three despeckling levels -
-                  ImageNet-normalized. No DnCNN: the network learns SAR -> optical itself.
+    "optical_L"   Model 1: L of the optical (s2) image, as gray on 3 channels
+    "sar3"        Model 3: the SAR (s1) tile as 3 channels - raw, Gaussian-smoothed
+                  (sigma 1) and (sigma 2.5), i.e. three despeckling levels
+    Both are ImageNet-normalized, the statistics the ResNet-50 was pretrained on.
 
-Outputs (meta["ab_head"], meta["predict_L"])
-    "tanh"  original head: normalized a/b directly
-    "reg"   a/b regression (tanh applied here)
-    "bins"  logits over Q color bins (Zhang et al. 2016, "Colorful Image Colorization"):
-            trained with class-rebalanced cross-entropy on soft-encoded targets, decoded
-            with the annealed mean (temperature T). Avoids the desaturated "average color"
-            that MSE regression converges to when the color is uncertain.
-    predict_L: the first channel is the L channel (tanh) - Model 3 predicts brightness too,
-            instead of inheriting the DnCNN's (which capped Model 2 at ~14.6 dB PSNR).
+Output (head of model_architecture.Colorizer)
+    predict_L: the first channel is L (tanh) - Model 3 predicts brightness too
+    then Q color-bin logits (Zhang et al. 2016, "Colorful Image Colorization"):
+    trained with class-rebalanced cross-entropy on soft-encoded targets, decoded with
+    the annealed mean (temperature T). Avoids the desaturated "average color" that
+    MSE regression converges to when the color is uncertain.
 """
 import math
 
 import torch
 import torch.nn.functional as F
 
-from color_utils import SIZE, ab_to_lab_units, resize_t, rgb_to_L, sar_to_L
-from model_architecture import _IMAGENET_MEAN, _IMAGENET_STD, encoder_input
+from color_utils import SIZE, ab_to_lab_units, resize_t, rgb_to_L
+from model_architecture import IMAGENET_MEAN, IMAGENET_STD
 
-INPUT_OF_MODEL = {1: "optical_L", 2: "sar_dncnn_L", 3: "sar3"}
+INPUT_OF_MODEL = {1: "optical_L", 3: "sar3"}
 
 
 # --------------------------------------------------------------------------- inputs
@@ -44,35 +40,35 @@ def _gauss(x, sigma):
     return F.conv2d(x, k.view(1, 1, -1, 1))
 
 
-def sar3_input(gray, size=SIZE):
-    """SAR gray (N,1,h,w) in [0,1] -> ImageNet-normalized (N,3,size,size)."""
-    g = resize_t(gray, size)
-    x = torch.cat([g, _gauss(g, 1.0), _gauss(g, 2.5)], dim=1)
-    mean = torch.tensor(_IMAGENET_MEAN, dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
-    std = torch.tensor(_IMAGENET_STD, dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
+def _imagenet(x):
+    mean = torch.tensor(IMAGENET_MEAN, dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
+    std = torch.tensor(IMAGENET_STD, dtype=x.dtype, device=x.device).view(1, 3, 1, 1)
     return (x - mean) / std
 
 
-def model_input(meta, gray=None, rgb=None, dncnn=None):
-    """-> (encoder input (N,3,224,224), given L (N,1,224,224) or None for sar3).
+def sar3_input(gray, size=SIZE):
+    """SAR gray (N,1,h,w) in [0,1] -> ImageNet-normalized (N,3,size,size)."""
+    g = resize_t(gray, size)
+    return _imagenet(torch.cat([g, _gauss(g, 1.0), _gauss(g, 2.5)], dim=1))
 
-    gray: SAR (N,1,h,w) in [0,1] at native resolution; rgb: optical (N,3,224,224) in [0,1].
+
+def optical_input(L):
+    """Normalized L (N,1,H,W) in [-1,1] -> ImageNet-normalized gray (N,3,H,W)."""
+    return _imagenet(((L + 1.0) * 0.5).repeat(1, 3, 1, 1))
+
+
+def model_input(meta, gray=None, rgb=None):
+    """-> (network input (N,3,H,W), given L (N,1,H,W) or None when L is predicted).
+
+    gray: SAR (N,1,h,w) in [0,1]; rgb: optical (N,3,H,W) in [0,1].
     """
     kind = meta["input"]
     if kind == "optical_L":
         L = rgb_to_L(rgb)
-    elif kind == "sar_dncnn_L":
-        L, _ = sar_to_L(gray, dncnn, meta.get("dncnn_res", "native"))
-    elif kind == "sar3":
+        return optical_input(L), L
+    if kind == "sar3":
         return sar3_input(gray), None
-    else:
-        raise ValueError(f"unknown input kind {kind!r}")
-    return encoder_input(L, meta.get("input_norm", "none")), L
-
-
-def forward_raw(encoder, decoder, enc_in):
-    f56, f28, f14, f7 = encoder(enc_in)
-    return decoder(f7, f14, f28, f56)
+    raise ValueError(f"unknown input kind {kind!r}")
 
 
 # --------------------------------------------------------------------------- bins
@@ -108,9 +104,9 @@ def class_weights(centers, prior, lam=0.5, sigma=5.0):
 def bin_loss(logits, ab_norm, centers, weights, stride=4, k=5, sigma=5.0):
     """Class-rebalanced cross-entropy against soft-encoded a/b targets.
 
-    Evaluated on every `stride`-th pixel (224 -> 56 per side) to keep memory small.
+    Evaluated on every `stride`-th pixel to keep memory small.
     """
-    lg = logits[:, :, ::stride, ::stride].flatten(2).transpose(1, 2)           # (N,P,Q)
+    lg = logits[:, :, ::stride, ::stride].flatten(2).transpose(1, 2).float()   # (N,P,Q)
     ab = ab_to_lab_units(ab_norm[:, :, ::stride, ::stride]).flatten(2).transpose(1, 2)  # (N,P,2)
     d2 = ((ab.unsqueeze(2) - centers.view(1, 1, -1, 2)) ** 2).sum(-1)          # (N,P,Q)
     kk = min(k, centers.shape[0])
@@ -123,29 +119,53 @@ def bin_loss(logits, ab_norm, centers, weights, stride=4, k=5, sigma=5.0):
 
 def annealed_mean(logits, centers, T=0.38):
     """Bin logits (N,Q,H,W) -> normalized a/b (N,2,H,W). T<1 sharpens toward the mode."""
-    p = torch.softmax(logits / T, dim=1)
+    p = torch.softmax(logits.float() / T, dim=1)
     ab = torch.einsum("nqhw,qc->nchw", p, centers.to(p.dtype))
     return lab_to_norm_ab(ab)
 
 
 # --------------------------------------------------------------------------- outputs
 def decode_output(raw, meta, centers=None):
-    """Raw decoder output -> (predicted L (N,1,H,W) or None, normalized a/b (N,2,H,W))."""
-    head = meta.get("ab_head", "tanh")
-    if head == "tanh" and not meta.get("predict_L"):
-        return None, raw
-    L = torch.tanh(raw[:, :1]) if meta.get("predict_L") else None
-    rest = raw[:, 1:] if L is not None else raw
-    if head == "reg":
-        return L, torch.tanh(rest)
+    """Raw head output -> (predicted L (N,1,H,W) or None, normalized a/b (N,2,H,W))."""
+    raw = raw.float()
+    L = torch.tanh(raw[:, :1]) if meta["predict_L"] else None
+    logits = raw[:, 1:] if L is not None else raw
     if centers is None:
         centers = torch.tensor(meta["bins"], dtype=raw.dtype, device=raw.device)
-    return L, annealed_mean(rest, centers, meta.get("T", 0.38))
+    return L, annealed_mean(logits, centers, meta.get("T", 0.38))
+
+
+# the 8 symmetries of a square: (k quarter turns, horizontal flip)
+_D4 = [(k, f) for f in (False, True) for k in range(4)]
+
+
+def _apply(x, k, flip):
+    x = torch.rot90(x, k, dims=(2, 3))
+    return torch.flip(x, dims=(3,)) if flip else x
+
+
+def _undo(x, k, flip):
+    x = torch.flip(x, dims=(3,)) if flip else x
+    return torch.rot90(x, -k, dims=(2, 3))
 
 
 @torch.no_grad()
-def predict(encoder, decoder, meta, gray=None, rgb=None, dncnn=None):
-    """Full inference on a batch -> (L used for the output (N,1,224,224), a/b normalized)."""
-    enc_in, L_given = model_input(meta, gray=gray, rgb=rgb, dncnn=dncnn)
-    L_pred, ab = decode_output(forward_raw(encoder, decoder, enc_in), meta)
+def predict(net, meta, gray=None, rgb=None, tta=False):
+    """Full inference on a batch -> (L used for the output (N,1,H,W), a/b normalized).
+
+    tta=True averages L and a/b over the 8 rotations/flips of the input (satellite
+    tiles have no "up", and the models were trained with the same augmentation).
+    """
+    x, L_given = model_input(meta, gray=gray, rgb=rgb)
+    if not tta:
+        L_pred, ab = decode_output(net(x), meta)
+    else:
+        L_sum, ab_sum = 0.0, 0.0
+        for k, f in _D4:
+            L_t, ab_t = decode_output(net(_apply(x, k, f)), meta)
+            ab_sum = ab_sum + _undo(ab_t, k, f)
+            if L_t is not None:
+                L_sum = L_sum + _undo(L_t, k, f)
+        ab = ab_sum / len(_D4)
+        L_pred = L_sum / len(_D4) if meta["predict_L"] else None
     return (L_pred if L_pred is not None else L_given), ab

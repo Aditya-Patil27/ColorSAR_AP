@@ -1,5 +1,5 @@
 {
-  "id": "priyanshgaur/colorsar-train",
+  "id": "aditya32211/colorsar-train",
   "title": "colorsar-train",
   "code_file": "run_kaggle.py",
   "language": "python",
@@ -9,7 +9,7 @@
   "enable_internet": true,
   "dataset_sources": [
     "requiemonk/sentinel12-image-pairs-segregated-by-terrain",
-    "priyanshgaur/colorsar-code"
+    "aditya32211/colorsar-code"
   ],
   "competition_sources": [],
   "kernel_sources": []
