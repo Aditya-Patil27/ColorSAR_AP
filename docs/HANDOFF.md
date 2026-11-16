@@ -14,10 +14,14 @@
   in history and under `v1-legacy`.
 - The .pth files stay out of git (168 MB). `.gitignore` no longer un-ignores
   `model1_run/*.pth` or `model3_run/*.pth`. Local copies are in the run folders.
-- Nothing is pending. Possible next steps: open a PR from scene-split to main, or try to
-  improve Model 3.
+- **`main` now holds this work.** On 2026-11-16 the user had `scene-split` fast-forwarded
+  straight into `main` on their fork (`origin`), with no PR. `main` and `scene-split` point at
+  the same commit. The previous recipe lives only under the tag `v1-legacy` (`a78ce9b`), so
+  `kaggle/prepare_code.py` now reads the legacy code from that tag, not from `main`.
+- **Project closed.** The user declined further training attempts on Model 3. Nothing is
+  pending.
 
-## Previous state (2026-11-15 ~18:50 IST)
+## Previous state (2026-11-15 ~18:50 IST; out of date, `main` has since moved)
 **Git.** Branch `scene-split` is committed and pushed to origin, tracking `origin/scene-split`:
 - `85ad6cd`: scene split, ResNet-50 U-Net, Kaggle tooling
 - `0ef82eb`: tuned recipe, README rewrite

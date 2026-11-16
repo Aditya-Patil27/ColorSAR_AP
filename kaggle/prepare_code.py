@@ -6,7 +6,7 @@ Kaggle datasets are flat here: subfolders are encoded in the file name with "__"
 
 Two code trees go up:
     ./        the current code (scene split, fine-tuned ResNet-50, full-resolution head)
-    legacy/   the previous recipe, taken from the git branch `main`, with its split
+    legacy/   the previous recipe, taken from the git tag `v1-legacy`, with its split
               replaced by the scene split - so the old and new models are retrained
               and scored on exactly the same held-out scenes.
 
@@ -24,7 +24,7 @@ CURRENT = ["color_utils.py", "model_architecture.py", "pipeline.py", "splits.py"
            "train_colorizer.py", "evaluate.py", "Train_model1.py", "Train_model3.py"]
 LEGACY = ["color_utils.py", "dncnn.py", "model_architecture.py", "pipeline.py", "splits.py",
           "train_colorizer.py", "evaluate.py", "Train_model1.py", "Train_model3.py"]
-LEGACY_REF = "main"
+LEGACY_REF = "v1-legacy"
 SCENE_OVERRIDE = """
 
 # ---- added by kaggle/prepare_code.py: the scene split replaces the per-pair hash split
