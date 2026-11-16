@@ -1,0 +1,32 @@
+Device: cuda  |  GPUs: 2  |  AMP: True
+Config: {'n_images': 0, 'n_val': 0, 'epochs': 15, 'batch_size': 32, 'lr': 0.0005, 'encoder_lr_mult': 0.05, 'bin_grid': 10.0, 'T_grid': [0.38, 0.5, 0.7, 1.0], 'rebal_lam': 1.0, 'L_weight': 1.0, 'num_workers': 4, 'seed': 42, 'out': 'm3_enc05', 'predict_L': True, 'augment': True, 'amp': True}
+16000 pairs  ->  train 11877  val 2463  (test 1660 held out, never touched here)
+scenes: train 17  val ['ROIs1970_fall_113', 'ROIs1970_fall_144', 'ROIs1970_fall_53', 'ROIs1970_fall_56', 'ROIs1970_fall_72', 'ROIs1970_fall_73']  test ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']
+Color bins: 163 occupied 10-unit cells (weights 1.00..1.00)
+Downloading: "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" to /root/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth
+
+  0%|          | 0.00/97.8M [00:00<?, ?B/s]
+ 11%|█         | 10.4M/97.8M [00:00<00:00, 109MB/s]
+ 37%|███▋      | 36.0M/97.8M [00:00<00:00, 202MB/s]
+ 63%|██████▎   | 61.2M/97.8M [00:00<00:00, 231MB/s]
+ 89%|████████▊ | 86.6M/97.8M [00:00<00:00, 244MB/s]
+100%|██████████| 97.8M/97.8M [00:00<00:00, 231MB/s]
+Trainable parameters: 43,894,852  (encoder fine-tuned)
+Epoch 1/15  train=3.6033  val=4.1943  val ab RMSE=16.25 (T=1)  L RMSE=21.40  lr=5.0e-04  (8.9 min)  <- best, saved
+Epoch 2/15  train=2.8290  val=4.4572  val ab RMSE=16.42 (T=1)  L RMSE=23.49  lr=4.9e-04  (13.8 min)
+Epoch 3/15  train=2.7481  val=4.4581  val ab RMSE=16.64 (T=1)  L RMSE=20.80  lr=4.8e-04  (18.6 min)  <- best, saved
+Epoch 4/15  train=2.7087  val=4.4196  val ab RMSE=16.71 (T=1)  L RMSE=20.41  lr=4.5e-04  (23.4 min)  <- best, saved
+Epoch 5/15  train=2.6792  val=4.2062  val ab RMSE=15.80 (T=1)  L RMSE=20.66  lr=4.2e-04  (28.2 min)  <- best, saved
+Epoch 6/15  train=2.6538  val=3.9580  val ab RMSE=14.46 (T=1)  L RMSE=19.19  lr=3.8e-04  (33.0 min)  <- best, saved
+Epoch 7/15  train=2.6359  val=4.3155  val ab RMSE=16.44 (T=1)  L RMSE=20.96  lr=3.3e-04  (37.9 min)
+Epoch 8/15  train=2.6174  val=3.9162  val ab RMSE=14.19 (T=1)  L RMSE=20.18  lr=2.8e-04  (42.7 min)
+Epoch 9/15  train=2.5995  val=3.9759  val ab RMSE=14.22 (T=1)  L RMSE=19.60  lr=2.3e-04  (47.6 min)
+Epoch 10/15  train=2.5880  val=4.0648  val ab RMSE=15.17 (T=1)  L RMSE=20.14  lr=1.8e-04  (52.4 min)
+Epoch 11/15  train=2.5769  val=4.2836  val ab RMSE=16.22 (T=1)  L RMSE=20.25  lr=1.3e-04  (57.3 min)
+Epoch 12/15  train=2.5641  val=4.2673  val ab RMSE=15.86 (T=1)  L RMSE=20.16  lr=9.1e-05  (62.1 min)
+Epoch 13/15  train=2.5557  val=4.3460  val ab RMSE=16.06 (T=1)  L RMSE=20.67  lr=5.7e-05  (67.0 min)
+Epoch 14/15  train=2.5484  val=4.1779  val ab RMSE=15.49 (T=1)  L RMSE=20.01  lr=3.1e-05  (71.8 min)
+Epoch 15/15  train=2.5416  val=4.3256  val ab RMSE=16.08 (T=1)  L RMSE=19.89  lr=1.5e-05  (76.6 min)
+
+Done. Best epoch 6 (val score 33.645). Results in ./m3_enc05/
+Metrics next:  python evaluate.py --model 3 --checkpoint m3_enc05/model_3.pth

@@ -2,8 +2,8 @@ v_2/
 __pycache__/
 *.pyc
 *.pth
-# ...but keep the trained checkpoints so they travel with the repo
-!model1_run/*.pth
+# ...but keep the previous recipe's small checkpoints. The current model1_run/model3_run
+# checkpoints are 168 MB (over GitHub's 100 MB limit) and stay out of git.
 !model2_run/*.pth
 visual_test_output.png
 _smoke/
@@ -11,5 +11,4 @@ colorized_result*.png
 
 demo_*.png
 !model1b_run/*.pth
-!model3_run/*.pth
 kaggle_out/

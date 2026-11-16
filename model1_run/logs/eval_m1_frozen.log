@@ -1,0 +1,22 @@
+Device: cuda  |  Model 1  |  checkpoint m1_frozen/model_1.pth (best epoch 5)  |  TTA False  |  eval size 256
+Evaluating on 1660 pairs: test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67'] (never trained on)
+
+========================================================================
+Model 1  -  1660 images  -  test scenes  -  scored at 256px
+========================================================================
+                                           PSNR dB     SSIM   ab RMSE
+  model (predicted color)                  26.0557   0.8489      9.18
+  no-color baseline (a=b=0)                25.8008   0.9071      9.85
+  mean-color baseline (train avg)          26.2953   0.9006      9.19
+  oracle (true ab, same L) [round trip]   128.7471   1.0000      0.00
+  brightness error (L RMSE vs optical L, Lab units): 0.00
+  colorizer vs no color  : +0.25 dB PSNR, -0.0582 SSIM, ab error 9.85 -> 9.18
+  colorizer vs mean color: -0.24 dB PSNR, -0.0517 SSIM, ab error 9.19 -> 9.18
+
+  terrain          n     PSNR  no-color  mean-col   oracle    SSIM  ab RMSE  L RMSE
+  agri           417   24.380    26.666    26.165  129.468  0.8357    10.74    0.00
+  barrenland     391   26.086    24.054    24.816  131.824  0.8374     9.45    0.00
+  grassland      449   26.817    25.111    25.923  124.995  0.8111     8.45    0.00
+  urban          403   26.913    27.369    28.280  129.197  0.9159     8.11    0.00
+
+Saved metrics to m1_frozen/metrics_test.json

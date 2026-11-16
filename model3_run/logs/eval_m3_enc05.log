@@ -1,0 +1,22 @@
+Device: cuda  |  Model 3  |  checkpoint m3_enc05/model_3.pth (best epoch 6)  |  TTA False  |  eval size 256
+Evaluating on 1660 pairs: test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67'] (never trained on)
+
+========================================================================
+Model 3  -  1660 images  -  test scenes  -  scored at 256px
+========================================================================
+                                           PSNR dB     SSIM   ab RMSE
+  model (predicted color)                  13.8263   0.2071     12.24
+  no-color baseline (a=b=0)                13.5178   0.2265      9.85
+  mean-color baseline (train avg)          13.6651   0.2268      9.19
+  oracle (true ab, same L)                 13.9706   0.2615      0.00
+  brightness error (L RMSE vs optical L, Lab units): 22.56
+  colorizer vs no color  : +0.31 dB PSNR, -0.0194 SSIM, ab error 9.85 -> 12.24
+  colorizer vs mean color: +0.16 dB PSNR, -0.0197 SSIM, ab error 9.19 -> 12.24
+
+  terrain          n     PSNR  no-color  mean-col   oracle    SSIM  ab RMSE  L RMSE
+  agri           417   11.843    12.323    12.131   12.401  0.2481    12.82   27.03
+  barrenland     391   15.735    15.333    15.331   15.771  0.1923     8.81   17.58
+  grassland      449   14.434    13.130    13.568   14.006  0.2518    17.33   23.32
+  urban          403   13.349    13.426    13.744   13.809  0.1292     9.29   21.91
+
+Saved metrics to m3_enc05/metrics_test.json

@@ -71,39 +71,48 @@ differently: its mean-color baseline is 8.78, against 9.19 here. So compare each
 
 ### Same test scenes, scored at 224 px
 
-<!-- RESULTS-V5: add the tuned Model 3 / Model 1 rows here when kaggle v5 finishes -->
-
 | model | PSNR (dB) | SSIM | a/b RMSE | gap to mean color | gap to no color | L RMSE |
 |---|---|---|---|---|---|---|
-| Model 1, previous recipe | 26.64 | 0.916 | 8.74 | −0.04 | −0.78 | 0 (given) |
+| **Model 1, current (TTA)** | **27.48** | **0.922** | **8.32** | **−0.86** | −1.53 | 0 (given) |
+| Model 1, current recipe, encoder at 0.02× (TTA) | 27.40 | 0.914 | 8.26 | −0.92 | −1.59 | 0 (given) |
 | Model 1, ResNet-50 U-Net, first recipe (TTA) | 26.71 | 0.910 | 9.09 | −0.10 | −0.76 | 0 (given) |
-| Model 3, previous recipe | 13.82 | 0.253 | 12.35 | **+3.57** | +2.83 | 22.50 |
-| Model 3, ResNet-50 U-Net, first recipe (TTA) | 13.89 | 0.257 | 14.59 | **+5.40** | +4.74 | 22.32 |
+| Model 1, previous recipe | 26.64 | 0.916 | 8.74 | −0.04 | −0.78 | 0 (given) |
+| **Model 3, current (TTA)** | **14.10** | **0.258** | **11.73** | **+2.54** | +1.87 | 22.27 |
+| Model 3, current recipe, encoder frozen (TTA) | 14.06 | 0.255 | 10.79 | +1.60 | +0.94 | 22.44 |
+| Model 3, ResNet-50 U-Net, first recipe (TTA) | 13.89 | 0.257 | 14.59 | +5.40 | +4.74 | 22.32 |
+| Model 3, previous recipe | 13.82 | 0.253 | 12.35 | +3.57 | +2.83 | 22.50 |
 
 The rows marked TTA average the prediction over the 8 rotations and flips. The previous
-recipe has no TTA.
+recipe has no TTA. The bold rows are the shipped checkpoints. For each model, two variants of
+the current recipe were trained, and the one with the better **validation** score was kept. On
+test, the other variant came out ahead for both models. Both are shown, because choosing by
+test would be cheating. Both shipped models stopped at their best validation epoch (Model 1: 5
+of 10, Model 3: 6 of 15) and decode at T = 0.7 (Model 1) and T = 1.0 (Model 3).
 
-### Per terrain (a/b RMSE at 224 px; this model's mean-color baseline in brackets)
+### Per terrain (a/b RMSE at 224 px, TTA; this model's mean-color baseline in brackets)
 
-| terrain | Model 1 previous | Model 1 first recipe | Model 3 previous | Model 3 first recipe |
+| terrain | Model 1 current | Model 1 previous | Model 3 current | Model 3 previous |
 |---|---|---|---|---|
-| agri | 10.89 (8.93) | 11.23 (9.19) | 12.61 (8.93) | 17.24 (9.19) |
-| barrenland | 7.94 (10.23) | 9.44 (10.67) | 9.24 (10.23) | 9.29 (10.67) |
-| grassland | 8.15 (9.53) | 8.11 (9.66) | 16.92 (9.53) | 19.08 (9.66) |
-| urban | 7.94 (6.36) | 7.64 (7.22) | 10.00 (6.36) | 12.00 (7.22) |
+| agri | 9.96 (9.19) | 10.89 (8.93) | 12.37 (9.19) | 12.61 (8.93) |
+| barrenland | 8.48 (10.67) | 7.94 (10.23) | 8.35 (10.67) | 9.24 (10.23) |
+| grassland | 7.56 (9.66) | 8.15 (9.53) | 16.66 (9.66) | 16.92 (9.53) |
+| urban | 7.32 (7.22) | 7.94 (6.36) | 8.84 (7.22) | 10.00 (6.36) |
 
 ### What the numbers say
 
-- **On honestly unseen scenes, color is hard.** Model 1 beats a constant color by only about
-  0.1 a/b units overall. It does well on barrenland and grassland but loses on agri and urban.
-- **Model 3 gets the color wrong.** Both recipes are worse than a constant color. The SAR
-  tile carries little color information, and confident colors cost more than safe ones on this
-  metric. Model 3's brightness error (≈ 22 Lab units) is also far from the optical image.
-- **The first ResNet-50 U-Net recipe did not beat the previous one.** Both models peaked
-  early (Model 1 at epoch 1, Model 3 at epoch 6) and then overfit the 17 training scenes, and
-  the vivid decoding (T = 0.38, rare colors up-weighted) was penalized. The current defaults
-  address both: the encoder is frozen (Model 1) or slowed down (Model 3), fewer epochs are
-  trained, rebalancing is off, and T is chosen on val.
+- **Model 1 now clearly beats a constant color.** Its gap moved from −0.04 (previous recipe)
+  to −0.86, and it wins on barrenland and grassland. On urban it is about even with a constant
+  color, and on agri it still loses.
+- **Model 3 improved but still gets the color wrong.** It beats the previous recipe on every
+  terrain and cut the gap from +3.57 to +2.54, but it is still worse than a constant color
+  overall. It wins only on barrenland. The SAR tile carries little color information, and
+  confident colors cost more than safe ones on this metric. Its brightness error (≈ 22 Lab
+  units) barely moved.
+- **What fixed it was less training, not more.** The first ResNet-50 U-Net recipe peaked at
+  epochs 1 and 6 and then overfit the 17 training scenes, and its vivid decoding (T = 0.38,
+  rare colors up-weighted) was penalized. The current recipe freezes the encoder (Model 1) or
+  slows it down (Model 3), trains fewer epochs, turns rebalancing off and picks T on val.
+  Validation chose T = 0.7 and 1.0, both safer than 0.38.
 
 Full numbers are in `model*_run/metrics*.json` and in the dashboard's *Results* tab.
 
@@ -214,6 +223,11 @@ trip, not a ceiling. It prints a/b RMSE for each row, and L RMSE for Model 3.
 - **Format 3** (written by `train_colorizer.py`) stores the whole network, encoder included,
   plus the metadata: input type, color bins, temperature, training settings and the scenes of
   each split. It does not depend on the torchvision weights of the machine that loads it.
+- **The current `model1_run/model_1.pth` and `model3_run/model_3.pth` are not in git.** Each
+  is 168 MB, over GitHub's 100 MB file limit. Train them with `kaggle/` (see section 4) and
+  copy the run folders into `model1_run/` and `model3_run/`. The metrics, history, split
+  and figures of the shipped runs are committed, and `metrics_legacy_same_scenes.json` holds
+  the previous recipe's scores on the same scenes.
 - `model1b_run/` and `model2_run/`, and the format 1/2 checkpoints, belong to the previous
   recipe. Its code (DnCNN, Model 2, adapters) lives under the git tag `v1-legacy`, and the
   current code refuses to load those checkpoints.
@@ -222,8 +236,8 @@ trip, not a ceiling. It prints a/b RMSE for each row, and L RMSE for Model 3.
 
 ## 7. Known limitations
 
-- **SAR → color is close to unsolved here.** Model 3 does not beat a constant color on the
-  held-out scenes. Its outputs are also smooth, because radar lacks optical texture.
+- **SAR → color is close to unsolved here.** Model 3 still does not beat a constant color on
+  the held-out scenes, though it beats the previous recipe. Its outputs are also smooth, because radar lacks optical texture.
 - **a/b RMSE favors safe, desaturated colors.** A vivid colorizer can look better and still
   score worse.
 - **Small scene count.** 17 training scenes is little variety, and the large encoder overfits

@@ -1,0 +1,19 @@
+Device: cuda  |  GPUs: 2  |  AMP: True
+Config: {'n_images': 0, 'n_val': 0, 'epochs': 10, 'batch_size': 32, 'lr': 0.0005, 'encoder_lr_mult': 0.0, 'bin_grid': 10.0, 'T_grid': [0.38, 0.5, 0.7, 1.0], 'rebal_lam': 1.0, 'L_weight': 1.0, 'num_workers': 4, 'seed': 42, 'out': 'm1_frozen', 'predict_L': False, 'augment': True, 'amp': True}
+16000 pairs  ->  train 11877  val 2463  (test 1660 held out, never touched here)
+scenes: train 17  val ['ROIs1970_fall_113', 'ROIs1970_fall_144', 'ROIs1970_fall_53', 'ROIs1970_fall_56', 'ROIs1970_fall_72', 'ROIs1970_fall_73']  test ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']
+Color bins: 163 occupied 10-unit cells (weights 1.00..1.00)
+Trainable parameters: 20,386,787  (encoder frozen)
+Epoch 1/10  train=3.0828  val=3.5154  val ab RMSE=12.99 (T=0.5)  lr=5.0e-04  (4.2 min)  <- best, saved
+Epoch 2/10  train=2.3320  val=3.4855  val ab RMSE=13.46 (T=1)  lr=4.9e-04  (8.4 min)
+Epoch 3/10  train=2.2574  val=3.5796  val ab RMSE=13.09 (T=0.7)  lr=4.5e-04  (12.5 min)
+Epoch 4/10  train=2.2169  val=3.5788  val ab RMSE=13.42 (T=1)  lr=4.0e-04  (16.7 min)
+Epoch 5/10  train=2.1880  val=3.2254  val ab RMSE=12.32 (T=0.7)  lr=3.3e-04  (20.8 min)  <- best, saved
+Epoch 6/10  train=2.1646  val=3.6877  val ab RMSE=13.68 (T=1)  lr=2.6e-04  (24.9 min)
+Epoch 7/10  train=2.1453  val=3.4999  val ab RMSE=13.06 (T=0.7)  lr=1.8e-04  (29.1 min)
+Epoch 8/10  train=2.1271  val=3.5833  val ab RMSE=13.45 (T=1)  lr=1.1e-04  (33.3 min)
+Epoch 9/10  train=2.1161  val=3.5478  val ab RMSE=13.13 (T=1)  lr=5.7e-05  (37.4 min)
+Epoch 10/10  train=2.1084  val=3.5236  val ab RMSE=13.31 (T=1)  lr=2.2e-05  (41.6 min)
+
+Done. Best epoch 5 (val score 12.320). Results in ./m1_frozen/
+Metrics next:  python evaluate.py --model 1 --checkpoint m1_frozen/model_1.pth

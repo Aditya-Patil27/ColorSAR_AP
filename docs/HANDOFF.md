@@ -1,30 +1,108 @@
 # ColorSAR handoff (2026-11-15)
 
-## UPDATE 18:40 IST: v3 done, tuned run v5 running (read this first)
-- v3 (full) finished COMPLETE. Its logs and metrics are in `C:\Users\app27\Downloads\kaggle_full\results`.
-  The v3 .pth files were NOT downloaded, and later pushes replaced the latest output; only the
-  Kaggle web UI version history may still have them.
-- v3 result: the new recipe did not beat legacy. Measured against each script's own mean-color
-  baseline, Model 1 was a tie (-0.10 vs -0.04) and Model 3 was worse (+5.40 vs +3.57). The two
-  scripts compute baselines differently: mean color is 8.78 in legacy and 9.19 in the new one.
-- Fixes in the code (uncommitted):
-  - val-tuned T (`--T_grid`, stored in the checkpoint meta);
-  - `--rebal_lam` (default 1.0 = off);
-  - Model 1: frozen encoder, 10 epochs;
-  - Model 3: encoder at 0.05x, 15 epochs.
-- run_kaggle.py now trains 4 variants: m3_enc05, m3_frozen, m1_frozen, m1_enc02. Each gets
-  eval, eval with TTA, and eval with TTA at 224 px. Legacy is not retrained.
-- v4 was a smoke run and was clean. **v5 = full**, pushed at 18:39 IST and expected to take ~5 h.
-- **README.md is already rewritten** with honest v3 numbers. Add the v5 rows at the
-  `<!-- RESULTS-V5 -->` marker and remove the marker.
-- **When v5 finishes:**
-  1. Pick the winner per model by best `val_score` in history.json, not by test.
-  2. Download the outputs in full, including .pth.
-  3. Copy the winners into model3_run/ and model1_run/.
-  4. Copy the legacy metrics_test.json from kaggle_full into `metrics_legacy_same_scenes.json`.
-  5. Update the README tables and the "What the numbers say" section, then report to the user.
-- The steps below are from before v3 finished; the job names have changed.
+## DONE (2026-11-16): version 5 placed, README updated, committed and pushed
+- v5 was COMPLETE and clean: no SKIPPED, STOPPED or Traceback, and n=1660 in every eval. The
+  full output, .pth files included, is in `C:\Users\app27\Downloads\kaggle_v5\results`.
+- Winners were picked by val_score: `m1_frozen` (12.32) and `m3_enc05` (33.65). On test the
+  runner-ups did better, and the README reports both.
+- Test scores, with TTA at 224 px:
+  - Model 1: 8.32 a/b RMSE, a gap of -0.86 (the legacy recipe had -0.04). It beats legacy.
+  - Model 3: 11.73, a gap of +2.54 (legacy had +3.57). It beats legacy but is still worse
+    than the mean color.
+- `model1_run/` and `model3_run/` now hold the v5 runs, plus `logs/` and
+  `metrics_legacy_same_scenes.json`. The old format-1/2 files were `git rm`'d; they are still
+  in history and under `v1-legacy`.
+- The .pth files stay out of git (168 MB). `.gitignore` no longer un-ignores
+  `model1_run/*.pth` or `model3_run/*.pth`. Local copies are in the run folders.
+- Nothing is pending. Possible next steps: open a PR from scene-split to main, or try to
+  improve Model 3.
 
+## Previous state (2026-11-15 ~18:50 IST)
+**Git.** Branch `scene-split` is committed and pushed to origin, tracking `origin/scene-split`:
+- `85ad6cd`: scene split, ResNet-50 U-Net, Kaggle tooling
+- `0ef82eb`: tuned recipe, README rewrite
+
+No PR is open, and `main` is untouched. Commit or push only when the user asks, and add no
+Co-Authored-By trailer.
+
+**Running.** Kaggle kernel `aditya32211/colorsar-train` **version 5**, MODE="full", 2x T4.
+- Pushed 18:39 IST; expect it done around 23:30-00:00 IST.
+- Version 4 was a smoke run of the same code and was clean.
+- Four jobs, each with eval, eval with TTA, and eval with TTA at 224 px, all with --per_terrain:
+
+  | job | model | encoder | epochs |
+  |---|---|---|---|
+  | `m3_enc05` | Model 3 | 0.05x (default) | 15 |
+  | `m3_frozen` | Model 3 | frozen | 15 |
+  | `m1_frozen` | Model 1 | frozen (default) | 10 |
+  | `m1_enc02` | Model 1 | 0.02x | 10 |
+
+- Every job picks the decoding T on val from {0.38, 0.5, 0.7, 1.0}, with class rebalancing off.
+  history.json has `val_T`.
+
+**Why version 5 exists.** Version 3, the first full run, lost to the old recipe on the same 7
+test scenes. Its logs and metrics are in `C:\Users\app27\Downloads\kaggle_full\results`; its
+.pth files were never downloaded. Compare each model against **its own** mean-color baseline,
+because the legacy evaluate.py computes baselines differently (mean color 8.78 there, 9.19 in
+the new one; both scored at 224 px):
+
+| | a/b RMSE | gap to its mean color |
+|---|---|---|
+| Model 1, legacy1b | 8.74 | -0.04 |
+| Model 1, new1 (TTA) | 9.09 | -0.10 (a tie) |
+| Model 3, legacy3 | 12.35 | +3.57 |
+| Model 3, new3 (TTA) | 14.59 | +5.40 |
+
+Diagnosis: early overfitting (best epochs 1 and 6), plus the vivid T=0.38 and rebalancing
+being punished by RMSE.
+
+## Next steps when version 5 is COMPLETE
+1. Check the status: `kaggle kernels status aditya32211/colorsar-train`.
+2. Download everything with `kaggle kernels output aditya32211/colorsar-train -p ../kaggle_v5`.
+   The download includes .pth files of about 168 MB each.
+3. Read every `*.log`. Look for SKIPPED, STOPPED or Traceback, and check that n=1660 in each
+   metrics JSON.
+4. **Pick the winner per model by the lowest `val_score` in history.json.** Do NOT pick by test.
+   Report the test numbers of both variants honestly.
+5. Place the results:
+   - Copy the Model 3 winner's folder contents into `model3_run/` and the Model 1 winner's into
+     `model1_run/`. These replace the old format-2 files there; the new code loads format 3
+     only. app.py reads `metrics_test.json`, `metrics_test_tta.json` and `history.json`.
+   - Copy `kaggle_full/results/legacy3/metrics_test.json` to
+     `model3_run/metrics_legacy_same_scenes.json`.
+   - Copy `kaggle_full/results/legacy1b/metrics_test.json` to
+     `model1_run/metrics_legacy_same_scenes.json`.
+   - `.gitignore` already keeps `model1_run/*.pth` and `model3_run/*.pth`. A 168 MB file is
+     over GitHub's 100 MB limit, so ask the user before committing the .pth (Git LFS, or keep
+     them out of git).
+6. Update the README:
+   - Add the version 5 rows (the TTA at 224 px numbers plus the gaps) at the
+     `<!-- RESULTS-V5 -->` marker, then delete the marker.
+   - Add per-terrain columns, and rewrite "What the numbers say" to match the outcome.
+   - If version 5 still loses, say so plainly.
+7. Report to the user briefly. Ask before committing and pushing to `scene-split`.
+
+## Gotchas
+- **Kaggle CLI.** Version 2.2.4; the credentials are in `~/.kaggle`. Never print or upload them.
+- **Cancelling.** The CLI cannot cancel a run; the user stops it in the web UI.
+- **GPU sessions.** The user has a limit of 2 batch GPU sessions. Never stop `verikg-*` kernels.
+- **Code changes.** Run `python kaggle/prepare_code.py --user aditya32211 --out ../colorsar_code_upload`,
+  then `kaggle datasets version -p ../colorsar_code_upload -m "..."`. Wait until
+  `kaggle datasets status aditya32211/colorsar-code` prints "ready", then
+  `kaggle kernels push -p kaggle --accelerator NvidiaTeslaT4`. Use smoke mode first for code
+  that has not been tested.
+- **Escapes.** In bash heredocs, Python strings that hold Windows paths need r'' (raw strings).
+- **Torch.** It is not installed locally, so `py_compile` is the only local check.
+- **Notebook.** `ColorSAR_Kaggle_Training.ipynb` is stale: it clones upstream. The README says so.
+
+## User preferences
+- Keep answers short and plain.
+- Ask decision questions as: the question, a short scenario, then a recommendation.
+- Publish no Artifacts unless asked.
+- Use Kaggle for long jobs.
+
+---
+# Older notes (before version 3 finished; job names and next steps are out of date)
 
 ## Goal
 The user asked to "check ColorSAR and see if we can improve the result", then approved "go, use Kaggle".
