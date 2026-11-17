@@ -445,13 +445,15 @@ def contrastive_pretrain(a, data, dev, sar_in_fn, hours):
 
 def load_vae(dev):
     from diffusers import AutoencoderKL
-    vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=torch.float16).to(dev).eval()
+    dtype = torch.float16 if dev.type == "cuda" else torch.float32
+    vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=dtype).to(dev).eval()
     for p in vae.parameters():
         p.requires_grad_(False)
     return vae
 
 
 SCALE = 0.18215
+LAT_CLIP = 5.0   # scaled SD latents lie in about [-4, 4]; clipping x0 keeps the VAE in range
 
 
 @torch.no_grad()
@@ -459,7 +461,7 @@ def encode_latents(vae, part, dev, bs=32):
     out = []
     for idx in batches(len(part), bs, shuffle=False):
         _, rgb = part.batch(idx, dev)
-        out.append(vae.encode((rgb * 2 - 1).half()).latent_dist.mean.float() * SCALE)
+        out.append(vae.encode((rgb * 2 - 1).to(vae.dtype)).latent_dist.mean.float() * SCALE)
     return torch.cat(out)
 
 
@@ -506,8 +508,8 @@ def run_picma(a, data, dev):
                 nk = torch.randn_like(z0[:k])
                 with torch.autocast("cuda", enabled=a.amp):
                     ek = bare(net)(diff.q_sample(z0[:k], tk, nk), tk, sar_in_fn(gray[:k])).float()
-                    x0 = diff.x0_from_eps(diff.q_sample(z0[:k], tk, nk), tk, ek)
-                    img = vae.decode((x0 / SCALE).half()).sample.float()
+                    x0 = diff.x0_from_eps(diff.q_sample(z0[:k], tk, nk), tk, ek).clamp(-LAT_CLIP, LAT_CLIP)
+                    img = vae.decode((x0 / SCALE).to(vae.dtype)).sample.float()
                 img = ((img + 1) / 2).clamp(0, 1)
                 L, ab = rgb_to_lab_t(img)
                 if phys:
@@ -537,8 +539,8 @@ def run_picma(a, data, dev):
             spatial, ctx = ema.cond(sar_in_fn(gray))
             spatial, ctx = spatial.repeat(K, 1, 1, 1), ctx.repeat(K, 1, 1)
             z = diff.ddim(lambda zz, tt: ema.denoise(zz, tt, spatial, ctx), (K * n, 4, 32, 32),
-                          steps=a.ddim_steps, device=dev)
-            img = torch.cat([vae.decode((z[i:i + 32] / SCALE).half()).sample.float()
+                          steps=a.ddim_steps, device=dev, clip=LAT_CLIP)
+            img = torch.cat([vae.decode((z[i:i + 32] / SCALE).to(vae.dtype)).sample.float()
                              for i in range(0, len(z), 32)])
         L, ab = rgb_to_lab_t(((img + 1) / 2).clamp(0, 1))
         return [(L[k * n:(k + 1) * n], ab[k * n:(k + 1) * n]) for k in range(K)]
