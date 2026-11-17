@@ -27,11 +27,12 @@ Teammates, no coding (needs a phone-verified Kaggle account with 10+ GPU hours l
 
 ## Person 1 - Kaggle (PICMA) + Results
 - Run the `picma` set, collect everyone's `results/` folders
-- Build the comparison table, write the **Results** section
+- Build the comparison table (`scripts/bench_figure.py`), write the **Results** section
+- Viva prep: `docs/VIVA_PREP.md`
 
 ## Person 2 - Ablation runs + Method
 - **Today:** run the `ablation` set on Kaggle (steps above)
-- Write the **Method** section from the bullet draft: SAR physics (speckle, Lee filter,
+- Write the **Method** section from `docs/METHOD_NOTES.md`: SAR physics (speckle, Lee filter,
   physics loss), cross-modal contrastive learning, cross-attention, frequency loss,
   latent diffusion
 
@@ -54,7 +55,8 @@ Teammates, no coding (needs a phone-verified Kaggle account with 10+ GPU hours l
 ## Person 5 - Figures + slides
 - **Architecture diagram** of the proposed model (draw.io / PowerPoint)
 - **Visual comparison figure**: one row per algorithm (SAR | outputs | real optical) -
-  a script makes the grid from the run outputs
+  `python scripts/bench_figure.py all_results --out paper_figs` makes the grid
+  (`comparison.png/.pdf`) and the tables (`results.tex`, `results.md`)
 - **Mid-sem slides**: problem, 9 algorithms, proposed model, results
 - **Discussion + Conclusion** after the results: which method wins, where diffusion
   helps, failure cases
