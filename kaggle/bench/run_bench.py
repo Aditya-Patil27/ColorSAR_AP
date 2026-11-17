@@ -3,9 +3,9 @@ ColorSAR benchmark - Kaggle GPU job: trains and scores a set of the comparison a
 of bench_run.py on the held-out test scenes, one after the other, in one 12 h session.
 The work is split over several Kaggle accounts, one SET each:
 
-    picma     histmatch, welsh, unet_r50 (test only), the proposed model, then short
-              pix2pix + cyclegan runs (owner's account: it needs the Model 3 checkpoint
-              from the colorsar-train kernel output)
+    picma     the proposed model, then histmatch, welsh, unet_r50 (test only; owner's
+              account: unet_r50 needs the Model 3 checkpoint from colorsar-train)
+    gans      pix2pix, cyclegan
     ddpm      the pixel-space diffusion baseline
     freq      transunet, wavenet
     ablation  the proposed model at a shorter budget, then with one component removed at
@@ -44,13 +44,15 @@ T0 = time.time()
 # job name -> (bench_run.py args, training hours, hours needed incl. data + eval).
 # Within a set the order is the priority: if the session runs short, the last jobs skip.
 SETS = {
-    "picma": [   # 1-3 only score on the test set; 4-5 get a short training run after PICMA
+    "picma": [   # the proposed model first and longest; 1-3 only score on the test set
+        ("picma", ["--algo", "picma", "--pre_hours", "0.4"], 9.3, 10.4),
         ("histmatch", ["--algo", "histmatch"], 0, 0.15),
         ("welsh", ["--algo", "welsh"], 0, 0.15),
         ("unet_r50", ["--algo", "unet_r50"], 0, 0.25),
-        ("picma", ["--algo", "picma", "--pre_hours", "0.4"], 7.8, 8.9),
-        ("pix2pix", ["--algo", "pix2pix"], 0.5, 0.65),
-        ("cyclegan", ["--algo", "cyclegan"], 0.5, 0.65),
+    ],
+    "gans": [
+        ("pix2pix", ["--algo", "pix2pix"], 2.3, 2.5),
+        ("cyclegan", ["--algo", "cyclegan"], 2.3, 2.5),
     ],
     "ddpm": [
         ("ddpm", ["--algo", "ddpm"], 9.0, 10.0),

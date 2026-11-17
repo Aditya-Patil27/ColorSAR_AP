@@ -6,9 +6,10 @@ diffusion), IEEE paper, mid-sem review slides.
 ## Kaggle runs - ~10 h GPU each, all at the same time
 | Who | Set | Algorithms |
 |---|---|---|
-| P1 | `picma` | 1-3 test only (no training), **9 PICMA** (7.8 h), then 4 Pix2Pix + 5 CycleGAN (0.5 h each) |
+| P1 | `picma` | **9 PICMA** (9.3 h training), then 1-3 test only (no training) |
 | teammate | `freq` | 6 TransUNet + 7 Wavelet U-Net (4.2 h each) |
 | teammate | `ddpm` | 8 DDPM (9 h) |
+| optional | `gans` | 4 Pix2Pix + 5 CycleGAN (2.3 h each, ~5 h total) |
 | optional | `ablation` | PICMA 2 h, then without physics / cross-attention / contrastive (the paper needs this if anyone has 10 GPU h left) |
 
 Teammates, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left this week):
