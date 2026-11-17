@@ -3,22 +3,22 @@
 Goal: 9-algorithm comparison + proposed model (physics-informed cross-modal attention
 diffusion), IEEE paper, mid-sem review slides.
 
-## Kaggle runs - 4 accounts, ~10 h GPU each, all at the same time
-| Who | Set | What it trains |
+## Kaggle runs - ~10 h GPU each, all at the same time
+| Who | Set | Algorithms |
 |---|---|---|
-| P1 | `picma` | histogram match, Welsh, ResNet-50 U-Net, **PICMA** (8.6 h) |
-| P2 | `ablation` | PICMA 2 h, then without physics / cross-attention / contrastive |
-| P3 | `ddpm` | pixel diffusion baseline (9 h) |
-| P4 | `gans` | Pix2Pix, TransUNet, Wavelet U-Net, CycleGAN (~2.3 h each) |
+| P1 | `picma` | 1-3 test only (no training), **9 PICMA** (7.8 h), then 4 Pix2Pix + 5 CycleGAN (0.5 h each) |
+| teammate | `freq` | 6 TransUNet + 7 Wavelet U-Net (4.2 h each) |
+| teammate | `ddpm` | 8 DDPM (9 h) |
+| optional | `ablation` | PICMA 2 h, then without physics / cross-attention / contrastive (the paper needs this if anyone has 10 GPU h left) |
 
-P2-P4, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left this week):
+Teammates, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left this week):
 1. Kaggle -> Create -> New Notebook
 2. Right panel: **Accelerator = GPU T4 x2**, **Internet = on**
 3. **Add Input** -> search `sentinel12-image-pairs-segregated-by-terrain` (by requiemonk) -> add
-4. One cell (change `gans` to your set):
+4. One cell (change `freq` to your set):
    ```
    !git clone -q -b benchmark https://github.com/Aditya-Patil27/ColorSAR_AP
-   !python ColorSAR_AP/kaggle/bench/run_bench.py --set gans
+   !python ColorSAR_AP/kaggle/bench/run_bench.py --set freq
    ```
 5. **Save Version -> Save & Run All (Commit)**. It runs in the background; you can close the tab.
 6. ~10 h later: open the version -> **Output** -> download `results/` and send it to P1.
@@ -34,7 +34,7 @@ P2-P4, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left 
   physics loss), cross-modal contrastive learning, cross-attention, frequency loss,
   latent diffusion
 
-## Person 3 - Literature review (+ Kaggle `ddpm` set)
+## Person 3 - Literature review
 - **Related Work**, ~15-20 papers:
   - classical colorization (Welsh 2002)
   - GANs (Pix2Pix, CycleGAN)
@@ -44,7 +44,7 @@ P2-P4, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left 
 - One paragraph per baseline: what it is and why it is in the comparison
 - Owns the BibTeX reference file
 
-## Person 4 - IEEE paper + Introduction (+ Kaggle `gans` set)
+## Person 4 - IEEE paper + Introduction
 - Set up the **IEEE conference template** on Overleaf, share with all 5
 - Write **Introduction** and **Dataset** (Sentinel-1/2 pairs, 4 terrains, scene split)
 - Write the **Abstract** last
@@ -61,7 +61,7 @@ P2-P4, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left 
 ## Timeline
 | When | What |
 |---|---|
-| Today | All 4 Kaggle runs start (P1-P4); Overleaf ready (P4); everyone starts writing |
+| Today | All Kaggle runs start; Overleaf ready (P4); everyone starts writing |
 | Tomorrow | Runs done, results sent to P1; diagram ready (P5) |
 | Day 3 | All numbers in, then table, figures, Results, Discussion |
 | Before mid-sem | Slides final, paper draft complete |
