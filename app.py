@@ -274,6 +274,6 @@ python colorize.py --image v_2/agri/s1/<file>.png --tta     # CLI demo
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT") or os.environ.get("GRADIO_SERVER_PORT") or 7860)
-    demo.launch(server_name="127.0.0.1", server_port=port,
+    demo.launch(server_name=os.environ.get("GRADIO_SERVER_NAME", "127.0.0.1"), server_port=port,
                 inbrowser=not os.environ.get("COLORSAR_NO_BROWSER"),
                 show_error=True, theme=gr.themes.Soft())
