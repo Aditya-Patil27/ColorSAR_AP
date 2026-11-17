@@ -3,19 +3,38 @@
 Goal: 9-algorithm comparison + proposed model (physics-informed cross-modal attention
 diffusion), IEEE paper, mid-sem review slides.
 
-## Person 1 - Kaggle runs + Results
-- Upload the code, run the Kaggle smoke test, then the full benchmark (~11 h)
-- Download the results, build the comparison table
-- Write the **Results** section
+## Kaggle runs - 4 accounts, ~10 h GPU each, all at the same time
+| Who | Set | What it trains |
+|---|---|---|
+| P1 | `picma` | histogram match, Welsh, ResNet-50 U-Net, **PICMA** (8.6 h) |
+| P2 | `ablation` | PICMA 2 h, then without physics / cross-attention / contrastive |
+| P3 | `ddpm` | pixel diffusion baseline (9 h) |
+| P4 | `gans` | Pix2Pix, TransUNet, Wavelet U-Net, CycleGAN (~2.3 h each) |
+
+P2-P4, no coding (needs a phone-verified Kaggle account with 10+ GPU hours left this week):
+1. Kaggle -> Create -> New Notebook
+2. Right panel: **Accelerator = GPU T4 x2**, **Internet = on**
+3. **Add Input** -> search `sentinel12-image-pairs-segregated-by-terrain` (by requiemonk) -> add
+4. One cell (change `gans` to your set):
+   ```
+   !git clone -q -b benchmark https://github.com/Aditya-Patil27/ColorSAR_AP
+   !python ColorSAR_AP/kaggle/bench/run_bench.py --set gans
+   ```
+5. **Save Version -> Save & Run All (Commit)**. It runs in the background; you can close the tab.
+6. ~10 h later: open the version -> **Output** -> download `results/` and send it to P1.
+   `results/summary.md` has your numbers.
+
+## Person 1 - Kaggle (PICMA) + Results
+- Run the `picma` set, collect everyone's `results/` folders
+- Build the comparison table, write the **Results** section
 
 ## Person 2 - Ablation runs + Method
-- **Today:** Kaggle account with GPU hours (phone verified). Runs the ablation kernel
-  (~10 h) from a ready folder - 3 commands, no coding
+- **Today:** run the `ablation` set on Kaggle (steps above)
 - Write the **Method** section from the bullet draft: SAR physics (speckle, Lee filter,
   physics loss), cross-modal contrastive learning, cross-attention, frequency loss,
   latent diffusion
 
-## Person 3 - Literature review
+## Person 3 - Literature review (+ Kaggle `ddpm` set)
 - **Related Work**, ~15-20 papers:
   - classical colorization (Welsh 2002)
   - GANs (Pix2Pix, CycleGAN)
@@ -25,7 +44,7 @@ diffusion), IEEE paper, mid-sem review slides.
 - One paragraph per baseline: what it is and why it is in the comparison
 - Owns the BibTeX reference file
 
-## Person 4 - IEEE paper + Introduction
+## Person 4 - IEEE paper + Introduction (+ Kaggle `gans` set)
 - Set up the **IEEE conference template** on Overleaf, share with all 5
 - Write **Introduction** and **Dataset** (Sentinel-1/2 pairs, 4 terrains, scene split)
 - Write the **Abstract** last
@@ -42,8 +61,8 @@ diffusion), IEEE paper, mid-sem review slides.
 ## Timeline
 | When | What |
 |---|---|
-| Today | Smoke test + full run start (P1); Kaggle setup (P2); Overleaf ready (P4); everyone starts writing |
-| Tomorrow | Full run done, ablations start (P2); diagram ready (P5) |
+| Today | All 4 Kaggle runs start (P1-P4); Overleaf ready (P4); everyone starts writing |
+| Tomorrow | Runs done, results sent to P1; diagram ready (P5) |
 | Day 3 | All numbers in, then table, figures, Results, Discussion |
 | Before mid-sem | Slides final, paper draft complete |
 
