@@ -1,4 +1,86 @@
-# ColorSAR handoff (2026-11-15)
+# Handoff - morning of 18 Nov 2026 (exam 9:30 AM, Room 4008)
+
+State when the session was closed (17 Nov, ~21:15 IST). Run the steps below in the
+`ColorSAR_AP` folder, on branch `benchmark`.
+
+## What is running in the cloud
+
+| Job | Where | Started | Expected end | Result location |
+|---|---|---|---|---|
+| PICMA, fair run (2x T4, 0.4 h + 9.3 h) | Kaggle kernel `aditya32211/colorsar-bench` (v2) | 20:08 IST | ~07:30 AM | kernel output `results/picma/` |
+| PICMA, long run (1x H100, 0.4 h + 6 h, batch 32) | Modal app `ap-BtrZuyqVSo2iC15NV7Zupw` (`colorsar-bench`) | ~20:50 IST | ~04:30 AM (hard stop 05:20) | volume `colorsar-results`, folder `full/picma_h100/` |
+| Web app (Model 3 SAR + Model 1 grey) | Modal app `colorsar-demo` | deployed | stays on | https://app2732006--colorsar-demo-ui.us-east.modal.run |
+
+Teammates ran `freq` (TransUNet, Wavelet U-Net) and `ddpm` on their own Kaggle accounts -
+ask them for their `results/` folders.
+
+## Morning steps
+
+```
+# 1. Is the H100 run finished? (colorsar-bench gone from the running list = finished)
+python -m modal app list
+python -m modal app logs ap-BtrZuyqVSo2iC15NV7Zupw      # last lines: "[picma_h100] test n=1660 PSNR ..." = success
+
+# 2. H100 results -> all_results/modal/picma_h100/
+python -m modal volume get colorsar-results full all_results/modal
+
+# 3. Kaggle run finished? (status must be COMPLETE)
+kaggle kernels status aditya32211/colorsar-bench
+kaggle kernels output aditya32211/colorsar-bench -p all_results/picma
+
+# 4. Copy the teammates' results/ folders into all_results/ (any sub-folder names), then:
+python scripts/bench_figure.py all_results --out paper_figs
+```
+
+Step 4 writes `paper_figs/results.md`, `results.tex`, `comparison.png/.pdf`. It prints
+`missing: ...` for every algorithm it did not find - that is fine, the table just has fewer rows.
+
+Then:
+- send `paper_figs/results.md` + `paper_figs/comparison.png` to the paper / report / PPT team;
+- fill the `[PENDING]` numbers in `docs/PROJECT_BRIEF.md` (video script + revision) from
+  `results.md` - never write a number that is not in that file.
+
+## How to report the two PICMA rows
+
+- **"PICMA (ours)"** = Kaggle 2x T4 run - same hardware as the baselines, this is the fair
+  comparison row.
+- **"PICMA (ours, 1xH100)"** = Modal run - different GPU, more training steps. Report it as an
+  extra row and say so; do not replace the fair row with it.
+
+## If something failed
+
+| Problem | What to do |
+|---|---|
+| Modal logs show `Traceback` / no `test n=1660` line | Use only the Kaggle PICMA row. Nothing was saved for that run. |
+| Kaggle status `ERROR` | Use only the H100 row and say the T4 run did not finish. Logs: `kaggle kernels output aditya32211/colorsar-bench -p kaggle_log` |
+| Both failed | Present Model 1 / Model 3 numbers from the README + the method, call PICMA "trained, evaluation in progress". |
+| `bench_figure.py` says "different test tiles" | One of the runs used other data - leave that run's folder out of `all_results/`. |
+| Web app link slow the first time | Wait ~30 s and reload (container start). |
+
+## Demo (web app)
+
+- Open the link, pick a sample from **"...or pick a sample"** (do not upload Google images -
+  other sensors, the result is a blur), click **Colorize**.
+- `optical (s2)` samples -> Model 1 (grey -> colour), best looking. `SAR (s1)` samples ->
+  Model 3, shows SAR | output | real optical. The app always picks the right model for a sample.
+- Results and About tabs explain metrics and method.
+
+## After the evaluation
+
+```
+python -m modal app stop colorsar-demo      # stops the web app (~$3/day)
+```
+- Delete the Hugging Face token at https://huggingface.co/settings/tokens (it was pasted in chat).
+- Submission folder (only after ma'am approves): checklist in `docs/PROJECT_BRIEF.md`, section B13.
+
+## Cost so far (Modal credits, approximate)
+
+H100 run ~$35-40, web app ~$0.13/h, data copy + tests < $2.
+
+---
+
+# Earlier handoff (Model 1 / Model 3 phase, 15-16 Nov) - history, kept as it was
+
 
 ## DONE (2026-11-16): version 5 placed, README updated, committed and pushed
 - v5 was COMPLETE and clean: no SKIPPED, STOPPED or Traceback, and n=1660 in every eval. The

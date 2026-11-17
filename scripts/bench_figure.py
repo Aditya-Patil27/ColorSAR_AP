@@ -28,6 +28,7 @@ ORDER = [  # (folder name, label in the paper)
     ("histmatch", "Hist. match"), ("welsh", "Welsh"), ("unet_r50", "U-Net R50"),
     ("pix2pix", "Pix2Pix"), ("cyclegan", "CycleGAN"), ("transunet", "TransUNet"),
     ("wavenet", "Wavelet U-Net"), ("ddpm", "DDPM"), ("picma", "PICMA (ours)"),
+    ("picma_h100", "PICMA (ours, 1xH100)"),   # longer run on Modal - different hardware, own row
 ]
 ABLATION = [("picma_short", "PICMA (2 h)"), ("picma_no_physics", "w/o physics"),
             ("picma_no_xattn", "w/o cross-attention"), ("picma_no_contrastive", "w/o contrastive")]
