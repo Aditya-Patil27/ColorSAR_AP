@@ -89,11 +89,18 @@ def run_colorize(upload_path, mode_choice, tta, sharpen, sample):
             return [], "Pick a dataset sample or upload an image first."
 
         mode = detect_mode(path) if mode_choice == "auto" else mode_choice
+        override = None
+        if not upload_path and mode != detect_mode(path):   # dataset sample: its file type decides
+            override, mode = mode, detect_mode(path)
         if mode not in MODELS:
             return [], f"No checkpoint for {mode} mode (`{CHECKPOINTS[mode]}` is missing)."
         net, meta = MODELS[mode]
         pred, shown, _ = colorize(path, mode, net, meta, DEVICE, tta=tta)
         notes = []
+        if override:
+            notes.append(f"'{override}' ignored: this dataset sample is "
+                         f"{'a Sentinel-1 SAR' if mode == 'sar' else 'an optical'} tile, "
+                         f"so the {mode.upper()} model is used")
         if tta:
             notes.append("averaged over the 8 rotations/flips (TTA)")
         if sharpen:
