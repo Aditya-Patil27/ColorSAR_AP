@@ -21,6 +21,7 @@ import shutil
 import subprocess
 
 CURRENT = ["color_utils.py", "model_architecture.py", "pipeline.py", "splits.py",
+           "bench_common.py", "bench_models.py", "bench_run.py",
            "train_colorizer.py", "evaluate.py", "Train_model1.py", "Train_model3.py"]
 LEGACY = ["color_utils.py", "dncnn.py", "model_architecture.py", "pipeline.py", "splits.py",
           "train_colorizer.py", "evaluate.py", "Train_model1.py", "Train_model3.py"]

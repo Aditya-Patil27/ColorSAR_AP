@@ -1,0 +1,16 @@
+{
+  "id": "aditya32211/colorsar-bench",
+  "title": "colorsar-bench",
+  "code_file": "run_bench.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "requiemonk/sentinel12-image-pairs-segregated-by-terrain",
+    "aditya32211/colorsar-code"
+  ],
+  "competition_sources": [],
+  "kernel_sources": ["aditya32211/colorsar-train"]
+}
