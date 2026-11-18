@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\caption{SAR-to-optical colorization on the held-out test scenes.}
+\label{tab:results}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+Method & PSNR$\uparrow$ & SSIM$\uparrow$ & ab RMSE$\downarrow$ & L RMSE$\downarrow$ & LPIPS$\downarrow$ & FID$\downarrow$ & Train (h) \\
+\midrule
+Hist. match & 10.88 & 0.055 & \textbf{9.12} & 30.63 & 0.687 & 293.1 & 0.0 \\
+Welsh & \textbf{14.15} & 0.210 & 9.22 & \textbf{20.78} & \textbf{0.665} & 266.1 & 0.0 \\
+U-Net R50 & 13.96 & \textbf{0.244} & 11.73 & 22.27 & 0.813 & 245.7 & 0.0 \\
+PICMA (ours) & 7.77 & 0.089 & 32.80 & 40.09 & 0.820 & \textbf{244.9} & 1.5 \\
+PICMA, mean of 4 & 11.10 & 0.186 & 19.70 & 29.09 & 0.783 & 258.9 & 1.5 \\
+\bottomrule
+\end{tabular}}
+\end{table}
