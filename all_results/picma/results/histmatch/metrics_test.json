@@ -1,0 +1,85 @@
+{
+  "algo": "histmatch",
+  "test_scenes": [
+    "ROIs1970_fall_115",
+    "ROIs1970_fall_121",
+    "ROIs1970_fall_124",
+    "ROIs1970_fall_133",
+    "ROIs1970_fall_27",
+    "ROIs1970_fall_32",
+    "ROIs1970_fall_67"
+  ],
+  "k_samples": 1,
+  "sample": {
+    "psnr": 10.87745236062959,
+    "ssim": 0.05457675738405406,
+    "ab_rmse": 9.121568887492261,
+    "L_rmse": 30.625168155762086,
+    "lpips": 0.6868105429662279,
+    "n": 1660,
+    "fid": 293.0765075683594,
+    "per_terrain": {
+      "agri": {
+        "psnr": 11.137908679733536,
+        "ssim": 0.06936373253301573,
+        "ab_rmse": 9.063972656103633,
+        "L_rmse": 28.603197367642995,
+        "lpips": 0.7202174011751902,
+        "n": 417
+      },
+      "barrenland": {
+        "psnr": 10.880947975254443,
+        "ssim": 0.04352220896607437,
+        "ab_rmse": 10.50416536526302,
+        "L_rmse": 29.94561333912413,
+        "lpips": 0.7682145044321904,
+        "n": 391
+      },
+      "grassland": {
+        "psnr": 12.460424243093621,
+        "ssim": 0.0687123988029072,
+        "ab_rmse": 9.762183452767625,
+        "L_rmse": 26.664103973150784,
+        "lpips": 0.6782686294850899,
+        "n": 449
+      },
+      "urban": {
+        "psnr": 8.840897905019132,
+        "ssim": 0.03425233256332946,
+        "ab_rmse": 7.126001805288916,
+        "L_rmse": 37.789896617160544,
+        "lpips": 0.5827800475486159,
+        "n": 403
+      }
+    }
+  },
+  "train_hours": 0.000666843056678772,
+  "config": {
+    "algo": "histmatch",
+    "name": "histmatch",
+    "root": "/kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2",
+    "out": "bench_out",
+    "cache": "/kaggle/working/cache",
+    "hours": 0.0,
+    "pre_hours": 0.3,
+    "epochs": 1000,
+    "bs": 16,
+    "n_train": 0,
+    "n_val": 0,
+    "n_test": 0,
+    "n_samples": 4,
+    "ddim_steps": 50,
+    "ckpt": "model3_run/model_3.pth",
+    "no_physics": false,
+    "no_contrastive": false,
+    "no_xattn": false,
+    "no_freq": false,
+    "phys_w": 0.05,
+    "freq_w": 1.0,
+    "aux_every": 4,
+    "smoke": false,
+    "seed": 42,
+    "dir": "bench_out/histmatch",
+    "amp": true
+  }
+}

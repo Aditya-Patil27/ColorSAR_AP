@@ -1,0 +1,91 @@
+[picma] device cuda  GPUs 2  config {'algo': 'picma', 'name': 'picma', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 1.0, 'pre_hours': 0.4, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': 'model3_run/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/picma', 'amp': True}
+16000 pairs -> train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']
+Downloading: "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" to /root/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth
+
+  0%|          | 0.00/97.8M [00:00<?, ?B/s]
+  6%|▋         | 6.25M/97.8M [00:00<00:01, 60.9MB/s]
+ 29%|██▉       | 28.5M/97.8M [00:00<00:00, 159MB/s] 
+ 55%|█████▌    | 54.0M/97.8M [00:00<00:00, 207MB/s]
+ 80%|███████▉  | 77.9M/97.8M [00:00<00:00, 224MB/s]
+100%|██████████| 97.8M/97.8M [00:00<00:00, 211MB/s]
+Downloading: "https://download.pytorch.org/models/resnet18-f37072fd.pth" to /root/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
+
+  0%|          | 0.00/44.7M [00:00<?, ?B/s]
+ 14%|█▎        | 6.12M/44.7M [00:00<00:00, 64.1MB/s]
+ 58%|█████▊    | 26.1M/44.7M [00:00<00:00, 149MB/s] 
+ 92%|█████████▏| 41.0M/44.7M [00:00<00:00, 152MB/s]
+100%|██████████| 44.7M/44.7M [00:00<00:00, 149MB/s]
+[contrastive] epoch 1  InfoNCE 0.7801  in-batch top-1 0.78  (0.02 h)
+[contrastive] epoch 2  InfoNCE 0.4656  in-batch top-1 0.89  (0.03 h)
+[contrastive] epoch 3  InfoNCE 0.5307  in-batch top-1 0.89  (0.05 h)
+[contrastive] epoch 4  InfoNCE 0.3022  in-batch top-1 0.92  (0.07 h)
+[contrastive] epoch 5  InfoNCE 0.3240  in-batch top-1 0.89  (0.09 h)
+[contrastive] epoch 6  InfoNCE 0.2298  in-batch top-1 0.94  (0.10 h)
+[contrastive] epoch 7  InfoNCE 0.1898  in-batch top-1 0.97  (0.12 h)
+[contrastive] epoch 8  InfoNCE 0.2740  in-batch top-1 0.92  (0.14 h)
+[contrastive] epoch 9  InfoNCE 0.2050  in-batch top-1 0.95  (0.15 h)
+[contrastive] epoch 10  InfoNCE 0.2004  in-batch top-1 0.98  (0.17 h)
+[contrastive] epoch 11  InfoNCE 0.1739  in-batch top-1 0.98  (0.19 h)
+[contrastive] epoch 12  InfoNCE 0.1775  in-batch top-1 0.95  (0.20 h)
+[contrastive] epoch 13  InfoNCE 0.1514  in-batch top-1 0.95  (0.22 h)
+[contrastive] epoch 14  InfoNCE 0.1240  in-batch top-1 1.00  (0.24 h)
+[contrastive] epoch 15  InfoNCE 0.0797  in-batch top-1 1.00  (0.25 h)
+[contrastive] epoch 16  InfoNCE 0.0857  in-batch top-1 1.00  (0.27 h)
+[contrastive] epoch 17  InfoNCE 0.1195  in-batch top-1 1.00  (0.29 h)
+[contrastive] epoch 18  InfoNCE 0.1313  in-batch top-1 0.98  (0.30 h)
+[contrastive] epoch 19  InfoNCE 0.1183  in-batch top-1 1.00  (0.32 h)
+[contrastive] epoch 20  InfoNCE 0.0728  in-batch top-1 0.98  (0.34 h)
+[contrastive] epoch 21  InfoNCE 0.0792  in-batch top-1 1.00  (0.35 h)
+[contrastive] epoch 22  InfoNCE 0.1474  in-batch top-1 0.98  (0.37 h)
+[contrastive] epoch 23  InfoNCE 0.1174  in-batch top-1 0.97  (0.39 h)
+[contrastive] epoch 24  InfoNCE 0.1141  in-batch top-1 1.00  (0.40 h)
+/usr/local/lib/python3.13/dist-packages/huggingface_hub/utils/_validators.py:206: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+encoded 11877 training latents (4, 32, 32) in 400 s (std 0.745)
+epoch 1  eps-MSE 0.1923  aux 0.0000  step 742  (0.14 h)
+epoch 2  eps-MSE 0.0893  aux 0.0000  step 1484  (0.28 h)
+epoch 3  eps-MSE 0.3443  aux 0.0000  step 2226  (0.42 h)
+epoch 4  eps-MSE 0.0818  aux 0.0000  step 2968  (0.56 h)
+epoch 5  eps-MSE 0.0810  aux 0.0000  step 3710  (0.71 h)
+epoch 6  eps-MSE 0.1463  aux 0.0000  step 4452  (0.85 h)
+epoch 7  eps-MSE 0.1722  aux 0.0000  step 5194  (0.99 h)
+epoch 8  eps-MSE 0.1441  aux 0.0000  step 5239  (1.00 h)
+Downloading: "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth" to /root/.cache/torch/hub/checkpoints/alexnet-owt-7be5be79.pth
+
+  0%|          | 0.00/233M [00:00<?, ?B/s]
+  0%|          | 768k/233M [00:00<00:36, 6.66MB/s]
+  4%|▍         | 9.75M/233M [00:00<00:04, 54.6MB/s]
+  7%|▋         | 16.5M/233M [00:00<00:04, 54.9MB/s]
+ 14%|█▎        | 31.5M/233M [00:00<00:02, 89.3MB/s]
+ 17%|█▋        | 40.4M/233M [00:00<00:02, 78.3MB/s]
+ 21%|██        | 48.2M/233M [00:00<00:02, 66.5MB/s]
+ 24%|██▎       | 55.0M/233M [00:00<00:03, 61.5MB/s]
+ 28%|██▊       | 65.6M/233M [00:01<00:02, 69.8MB/s]
+ 34%|███▍      | 78.9M/233M [00:01<00:01, 87.2MB/s]
+ 38%|███▊      | 87.9M/233M [00:01<00:01, 87.2MB/s]
+ 42%|████▏     | 98.4M/233M [00:01<00:01, 84.6MB/s]
+ 48%|████▊     | 112M/233M [00:01<00:01, 99.7MB/s] 
+ 52%|█████▏    | 122M/233M [00:01<00:01, 88.9MB/s]
+ 56%|█████▋    | 131M/233M [00:01<00:01, 78.8MB/s]
+ 62%|██████▏   | 144M/233M [00:01<00:01, 91.9MB/s]
+ 66%|██████▌   | 153M/233M [00:02<00:01, 79.9MB/s]
+ 70%|███████   | 164M/233M [00:02<00:00, 81.0MB/s]
+ 76%|███████▌  | 176M/233M [00:02<00:00, 92.0MB/s]
+ 80%|███████▉  | 185M/233M [00:02<00:00, 81.2MB/s]
+ 84%|████████▍ | 197M/233M [00:02<00:00, 81.3MB/s]
+ 90%|████████▉ | 210M/233M [00:02<00:00, 93.9MB/s]
+ 94%|█████████▍| 219M/233M [00:02<00:00, 84.3MB/s]
+ 98%|█████████▊| 229M/233M [00:02<00:00, 85.8MB/s]
+100%|██████████| 233M/233M [00:02<00:00, 81.8MB/s]
+Downloading: "https://github.com/toshas/torch-fidelity/releases/download/v0.2.0/weights-inception-2015-12-05-6726825d.pth" to /root/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth
+
+  0%|          | 0.00/91.2M [00:00<?, ?B/s]
+ 11%|█         | 10.1M/91.2M [00:00<00:00, 104MB/s]
+ 22%|██▏       | 20.1M/91.2M [00:00<00:01, 48.9MB/s]
+ 51%|█████     | 46.4M/91.2M [00:00<00:00, 112MB/s] 
+ 77%|███████▋  | 70.1M/91.2M [00:00<00:00, 150MB/s]
+100%|██████████| 91.2M/91.2M [00:00<00:00, 137MB/s]
+[picma] test n=1660  PSNR 7.77  SSIM 0.0888  ab RMSE 32.80  L RMSE 40.09  LPIPS 0.8203  FID 244.87326049804688
+[picma] mean of samples: PSNR 11.10  SSIM 0.1860  ab RMSE 19.70  L RMSE 29.09
+[picma] done: train 1.52 h, eval 30.6 min

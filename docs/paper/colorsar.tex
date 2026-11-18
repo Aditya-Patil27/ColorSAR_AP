@@ -1,0 +1,411 @@
+% ColorSAR - IEEE conference paper, DRAFT 1 (18 Nov 2026).
+% Build on Overleaf: upload colorsar.tex + refs.bib, compiler pdfLaTeX, run BibTeX.
+%
+% Every number in this draft comes from a run log on the 7 held-out test scenes (n = 1660):
+%   all_results/picma/results/{histmatch,welsh,unet_r50}.log   (Kaggle colorsar-bench v2)
+%   all_results/picma_t4/results/picma.log                     (Kaggle colorsar-bench v3, 1 h budget)
+%   Priyanshaur/ColorSAR @ diffusion-experiment b5cc366, diffusion_small_run/metrics_test.json
+% Red \pend{...} text = waiting for a run or a section owner. Do not invent numbers for it.
+% Section owners follow docs/WORK_SPLIT.md.
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{url}
+\newcommand{\pend}[1]{\textcolor{red}{[#1]}}
+
+\begin{document}
+
+\title{ColorSAR: Physics-Informed Cross-Modal Attention Latent Diffusion\\
+for SAR-to-Optical Image Translation}
+
+\author{
+\IEEEauthorblockN{\pend{Author 1}, \pend{Author 2}, \pend{Author 3}, \pend{Author 4}, \pend{Author 5}}
+\IEEEauthorblockA{\pend{Department, Institute, City, Country}\\
+\pend{emails}}
+}
+
+\maketitle
+
+% Owner: Person 4 - rewrite last, once all rows are in.
+\begin{abstract}
+Synthetic aperture radar (SAR) images the Earth through clouds and at night, but its grey,
+speckled images are hard for people to read. We study the translation of a Sentinel-1 SAR
+tile into the matching Sentinel-2 optical tile. We propose PICMA, a physics-informed
+cross-modal attention latent diffusion model. PICMA feeds the generator a three-channel
+physics input built with the Lee speckle filter and adds a speckle-aware physics loss. It
+aligns the SAR encoder with an optical encoder by contrastive pretraining, and it conditions
+a latent denoiser on 320 SAR tokens through cross-attention. We compare PICMA with
+\pend{eight} methods, from classical colour transfer to GANs, Transformers and pixel-space
+diffusion. Every method uses the same scene-level split, so the 1{,}660 test tiles come from
+seven Sentinel scenes that no model saw in training. All methods are scored by the same code
+in CIE Lab and with perceptual metrics. On this strict split, no method beats a constant
+mean colour on a/b colour error. Classical statistics transfer is best on PSNR and LPIPS. PICMA, trained
+for only one hour on two T4 GPUs, has the lowest FID (244.9), but by a margin within the
+noise of the metric, and it is the worst on the pixel metrics.
+\pend{update with the remaining baselines and the ablation}.
+\end{abstract}
+
+\begin{IEEEkeywords}
+SAR-to-optical translation, Sentinel-1, Sentinel-2, speckle, Lee filter, latent diffusion,
+cross-attention, contrastive learning, image colorization
+\end{IEEEkeywords}
+
+% =====================================================================================
+% Owner: Person 4
+\section{Introduction}
+
+Optical satellites such as Sentinel-2 record colour images of the Earth's surface, but they
+cannot see through clouds and they need daylight. In monsoon regions, an area can stay
+hidden from optical sensors for weeks. SAR satellites such as Sentinel-1 send microwave pulses
+and record the echo. They work through clouds, day and night. A SAR image, however, records
+surface roughness and geometry, not colour. It is grey and covered in multiplicative speckle
+noise, so it is hard for a non-expert to read.
+
+SAR-to-optical translation predicts the optical image that a cloud-free optical sensor would
+have recorded. The task is ill-posed. Two fields with the same radar texture can be green or
+brown, so one SAR tile matches many plausible colourings. A network trained with a pixel loss
+therefore learns to predict the average colour. Its output is dull and greyish.
+Generative models such as GANs and diffusion models can sample one sharp, plausible
+colouring instead. They then trade pixel accuracy for realism, which is the
+perception-distortion trade-off~\cite{blau2018perception}.
+
+A second problem is evaluation. Tiles cut from one satellite scene overlap and look alike.
+When train and test tiles are drawn at random from the same scenes, the test score rewards
+memorisation. In our own earlier experiments, a per-pair random split inflated
+the test PSNR of the SAR colourizer to 16.6~dB. We therefore hold out whole scenes.
+
+\textbf{Contributions.}
+\begin{itemize}
+\item PICMA, a latent diffusion model for SAR-to-optical translation. It combines (i) a
+  physics input and a physics loss derived from the multiplicative speckle model and the
+  Lee filter~\cite{lee1980speckle}, (ii) contrastive SAR--optical pretraining of the
+  conditioning encoder, (iii) cross-attention from the denoiser to SAR tokens, and (iv) a
+  focal frequency loss~\cite{jiang2021ffl} on the decoded image.
+\item A benchmark of nine methods on a scene-held-out split of Sentinel-1/2 pairs. All methods
+  share the data, the 1{,}660 test tiles and the scoring code, and the training budget is
+  reported for each.
+\item An honest analysis: on this split, the learned models do not beat a constant mean
+  colour on a/b error, and we discuss why.
+\end{itemize}
+
+% =====================================================================================
+% Owner: Person 3 - extend to 15-20 papers, one paragraph per baseline family.
+\section{Related Work}
+
+\textbf{Classical colourization.} Welsh et al.~\cite{welsh2002transferring} transfer colour
+from a reference image to a grey image by matching local luminance statistics. It needs no
+training. We use a SAR-adapted version as a baseline.
+
+\textbf{CNN colourization.} Zhang et al.~\cite{zhang2016colorful} cast colourization as
+classification over quantised a/b bins with class rebalancing, and decode with an annealed
+mean. Our U-Net baseline uses this head on a ResNet-50~\cite{he2016resnet}
+U-Net~\cite{ronneberger2015unet}.
+
+\textbf{GANs.} Pix2Pix~\cite{isola2017pix2pix} trains a U-Net generator against a PatchGAN
+discriminator on paired data. CycleGAN~\cite{zhu2017cyclegan} drops the pairing with a
+cycle-consistency loss. Fuentes Reyes et al.~\cite{fuentesreyes2019sar2opt} studied
+conditional GANs for SAR-to-optical translation on SEN1-2~\cite{schmitt2018sen12} and
+discussed the limits of the task.
+
+\textbf{Transformers and frequency methods.} TransUNet~\cite{chen2021transunet} places a
+Transformer~\cite{vaswani2017attention} in the U-Net bottleneck for global context.
+Multi-level wavelet CNNs~\cite{liu2018mwcnn} replace pooling with the discrete wavelet
+transform. The focal frequency loss~\cite{jiang2021ffl} weights frequency errors by their size
+and so reduces blur.
+
+\textbf{Diffusion models.} DDPM~\cite{ho2020ddpm} learns to reverse a gradual noising process.
+DDIM~\cite{song2021ddim} samples deterministically in far fewer steps.
+Palette~\cite{saharia2022palette} applies conditional diffusion to image-to-image tasks,
+colourization included. Latent diffusion~\cite{rombach2022ldm} runs the process in the
+latent space of a pretrained autoencoder and conditions it by cross-attention.
+
+\textbf{Contrastive learning.} InfoNCE~\cite{oord2018cpc} and CLIP~\cite{radford2021clip}
+align two encoders by asking each sample to identify its paired partner within a batch.
+
+\pend{Person 3: add SAR-to-optical papers with diffusion and Transformers, and despeckling
+work beyond Lee.}
+
+% =====================================================================================
+% Owner: Person 4
+\section{Dataset and Split}
+
+We use the Kaggle release ``Sentinel-1/2 image pairs segregated by
+terrain''~\cite{requiemonk_dataset}, which follows the SEN1-2 format~\cite{schmitt2018sen12}.
+It holds 16{,}000 co-registered pairs of 256$\times$256 tiles, 4{,}000 for each of four
+terrains: agriculture, barren land, grassland and urban. The tiles are cut from 30 Sentinel
+scenes. Each SAR tile is single-polarisation (VV), 8-bit. We read the grey values as a linear
+mapping of $-25$ to $0$~dB, an assumption about how the dataset was exported.
+
+\textbf{Scene split.} Whole scenes are held out (Table~\ref{tab:split}), and every terrain
+has at least one scene in validation and in test. The validation scenes choose the best
+epoch and the decoding settings. The test scenes are used only for the final scores. All
+seven test scenes are fall scenes, because the dataset holds only one summer scene.
+
+\begin{table}[t]
+\centering
+\caption{Scene-held-out split. Test tiles per terrain: agriculture 417, barren land 391,
+grassland 449, urban 403.}
+\label{tab:split}
+\begin{tabular}{lrr}
+\toprule
+Part & Scenes & Pairs \\
+\midrule
+Train & 17 & 11{,}877 \\
+Validation & 6 & 2{,}463 \\
+Test & 7 & 1{,}660 \\
+\midrule
+Total & 30 & 16{,}000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================================
+% Owner: Person 2 - expand from docs/METHOD_NOTES.md; all settings below are from bench_run.py.
+\section{Proposed Method: PICMA}
+
+PICMA (Physics-Informed Cross-Modal Attention latent diffusion) generates the optical tile
+in the latent space of a frozen autoencoder. It is conditioned on the SAR tile through a
+pretrained SAR encoder. Fig.~\ref{fig:arch} shows the full model.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][4.2cm][c]{0.92\columnwidth}{\centering\small
+\pend{Person 5: architecture diagram}\\[2pt]
+SAR $\rightarrow$ Lee filter $\rightarrow$ 3-ch physics input $\rightarrow$ ResNet-50
+$\rightarrow$ (32$\times$32 spatial concat $|$ 320 tokens $\rightarrow$ cross-attention)
+$\rightarrow$ latent U-Net $\times$ 50 DDIM steps $\rightarrow$ VAE decoder $\rightarrow$ RGB.
+Side box: contrastive pretraining with optical ResNet-18. Loss box: $\epsilon$-MSE +
+physics + FFL.}}
+\caption{PICMA overview.}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Speckle Model and Physics Input}
+SAR speckle is multiplicative: $I = R\,n$, where $R$ is the true reflectivity and $n$ has
+mean 1 and variance $1/\mathrm{ENL}$. For Sentinel-1 IW GRD we use $\mathrm{ENL}=4.4$, so pure
+speckle has coefficient of variation $C_u = 1/\sqrt{\mathrm{ENL}} \approx 0.48$. In a
+7$\times$7 window on linear intensity, the Lee filter~\cite{lee1980speckle} computes the local
+mean $m$, the local variation $C_i = \sqrt{v}/m$ and the weight
+\begin{equation}
+w = \operatorname{clip}_{[0,1]}\!\left(\frac{1 - C_u^2/C_i^2}{1 + C_u^2}\right),\qquad
+I_f = m + w\,(I - m).
+\end{equation}
+Where $w \approx 0$ the window holds only speckle and is smoothed. Where $w \rightarrow 1$
+the window holds real structure, such as an edge or a building, which is kept. Instead of
+repeating the grey tile three times, the encoder receives three physics channels: raw SAR
+(dB), Lee-filtered SAR (dB) and $C_i$ scaled by $\sqrt{\mathrm{ENL}}/4$.
+
+\subsection{Physics Loss}
+On the decoded prediction $(\hat L, \hat{ab})$ we add two terms:
+\begin{equation}
+\mathcal{L}_{\mathrm{phys}} = \overline{(1-w)\,\lVert\nabla \hat{ab}\rVert}
+ + \overline{w\,\bigl(1 - \lvert\cos\angle(\nabla \hat L, \nabla I_f)\rvert\bigr)}.
+\end{equation}
+The first term keeps colour flat where the radar sees a homogeneous surface. The second term
+aligns brightness edges with the despeckled radar edges. The absolute cosine allows the
+contrast to flip between the sensors; a metal roof, for example, is bright in SAR but can be
+dark in optical. The weight is 0.05.
+
+\subsection{Cross-Modal Contrastive Pretraining}
+Before diffusion training, the SAR encoder (ResNet-50, ImageNet initialisation) is aligned
+with an optical encoder (ResNet-18, ImageNet initialisation) on the paired training tiles.
+Each branch applies global average pooling and a two-layer MLP to a 128-d, L2-normalised
+embedding. A symmetric InfoNCE loss~\cite{oord2018cpc,radford2021clip} (temperature 0.1, batch
+64) asks each SAR tile to identify its own optical tile among the 64 tiles of the batch. This step runs
+for 0.4~h at learning rate $10^{-4}$. Only the SAR encoder is kept.
+
+\subsection{Latent Diffusion with Cross-Modal Attention}
+A frozen Stable Diffusion VAE (\texttt{sd-vae-ft-mse})~\cite{rombach2022ldm} maps a
+256$\times$256$\times$3 optical tile to a 32$\times$32$\times$4 latent (scale 0.18215). The
+latent has 48 times fewer values than the tile. The forward process is DDPM~\cite{ho2020ddpm}
+with $T=1000$ steps and a linear $\beta$ schedule from $10^{-4}$ to $0.02$. The denoiser predicts the noise
+$\epsilon$ and is trained with $\mathcal{L}_\epsilon = \lVert\epsilon - \hat\epsilon\rVert_2^2$.
+
+The denoiser is a latent U-Net with three levels (128/256/512 channels) and two residual
+blocks per level. It has self-attention and cross-attention at 16$\times$16 and 8$\times$8. The SAR encoder
+conditions it along two paths. In the \emph{spatial path}, layer2 features (32$\times$32,
+512 channels) pass through a 1$\times$1 convolution to 64 channels and are concatenated with
+the noisy latent, which gives pixel-aligned guidance. In the \emph{token path}, layer3
+(16$\times$16) and layer4 (8$\times$8) give 320 tokens. These are projected to 512 dimensions and
+receive a learned position embedding. In cross-attention~\cite{vaswani2017attention}, the
+latent features are the queries and the SAR tokens are the keys and values. Every latent
+position can therefore draw context from the whole tile.
+
+\subsection{Auxiliary Losses on the Decoded Image}
+Every fourth step, four tiles are noised to a low level ($t < 300$). The model predicts $x_0$
+from $\hat\epsilon$, and the result is decoded with the VAE and converted to Lab. Two losses
+are added on this decoded image: the physics loss (weight 0.05) and the focal frequency
+loss~\cite{jiang2021ffl} (weight 1.0) between the 2-D spectra of the prediction and the
+target. The FFL counters the blur that pixel losses cause. We use low $t$ only, because only
+there is the decoded $x_0$ a meaningful image.
+
+\subsection{Sampling}
+At test time we use DDIM~\cite{song2021ddim} with 50 steps and clip the predicted $x_0$ to
+the latent range. We draw $K=4$ samples per tile from different start noise. We report one
+sample, which is a realistic output, and the mean of the $K$ samples, which is blurrier but
+closer in pixel terms.
+
+% =====================================================================================
+% Owner: Person 1
+\section{Experimental Setup}
+
+\subsection{Compared Methods}
+\begin{enumerate}
+\item \textbf{Histogram match + mean colour.} L is the SAR intensity mapped onto the
+  training L distribution by histogram matching (a lookup table from 2{,}000 training
+  tiles). a/b is the mean training colour.
+\item \textbf{Welsh}~\cite{welsh2002transferring}, adapted to SAR as a statistics lookup.
+  Each pixel is described by its Lee-filtered intensity (32 bins) and its 5$\times$5 local
+  standard deviation (8 bins). It receives the mean Lab colour (L, a and b) of the training
+  pixels in the same cell, estimated from 2{,}000 training tiles. Cells with 20 or fewer
+  pixels fall back to the global mean.
+\item \textbf{U-Net R50}: our ResNet-50 U-Net colourizer, with a Zhang colour-bin
+  head~\cite{zhang2016colorful} and a tanh L head. Its input is the SAR tile with Gaussian blurs at
+  $\sigma=1$ and $2.5$. The encoder is fine-tuned at 0.05$\times$ the learning rate for 15
+  epochs. We score it with 8-fold test-time augmentation.
+\item \textbf{Pix2Pix}~\cite{isola2017pix2pix} \pend{run pending}.
+\item \textbf{CycleGAN}~\cite{zhu2017cyclegan} \pend{run pending}.
+\item \textbf{TransUNet}~\cite{chen2021transunet} \pend{teammate run, results not received}.
+\item \textbf{Wavelet U-Net + FFL}~\cite{liu2018mwcnn,jiang2021ffl}
+  \pend{teammate run, results not received}.
+\item \textbf{DDPM-S}, a Palette-style~\cite{saharia2022palette} conditional pixel diffusion
+  model. It generates L, a and b at 256~px, conditioned on the SAR tile at three
+  despeckling levels. It uses a cosine schedule, EMA and DDIM sampling with 50 steps and
+  $K=1$. It is a small model (5.6\,M parameters) trained for 2.5~h on 2$\times$T4
+  (4{,}660 steps).
+\item \textbf{PICMA (ours)}, Section~IV.
+\end{enumerate}
+
+\subsection{Training Details}
+PICMA uses AdamW~\cite{loshchilov2019adamw} at learning rate $10^{-4}$ ($2\times10^{-5}$ for the SAR encoder), no weight
+decay, batch 16, gradient clipping at 1.0 and mixed precision. The same random 90-degree
+rotation and flip are applied to the SAR and the optical tile. An EMA of the weights (0.999)
+is used at test time. Training runs on a fixed wall-clock budget on 2$\times$NVIDIA T4
+(Kaggle), and the learning rate decays linearly over the second half of the budget.
+
+The planned budget was 0.4~h contrastive pretraining plus 9.3~h diffusion training. That run
+was stopped by the platform after 1.08~h of diffusion training (exit code $-9$, most likely
+out of memory) and saved nothing. The PICMA results in this draft therefore come from a
+backup run with a 1~h diffusion budget: 8 epochs and 5{,}239 steps, 1.52~h of training in
+total. \pend{Replace if a longer run finishes.}
+
+\subsection{Metrics}
+All methods are scored by the same code on the 1{,}660 test tiles at 256~px. PSNR and
+SSIM~\cite{wang2004ssim} are computed on RGB. a/b RMSE and L RMSE are computed in CIE Lab:
+L is lightness, and a/b are the colour axes. LPIPS~\cite{zhang2018lpips} uses AlexNet, and
+FID~\cite{heusel2017fid} uses 2048-d Inception features. FID on 1{,}660 images is biased
+upward. It is valid for comparing our methods with each other, but not with published FID
+values. DDPM-S was scored by its own evaluation script, which uses the same tiles and the
+same metric definitions but does not compute FID.
+
+% =====================================================================================
+% Owner: Person 1
+\section{Results}
+
+\begin{table*}[t]
+\centering
+\caption{SAR-to-optical translation on the 7 held-out test scenes (1{,}660 tiles, 256~px).
+Best value per column in bold. ``Train'' is GPU hours on 2$\times$T4. The mean-colour baseline
+alone reaches an a/b RMSE of 9.13.}
+\label{tab:results}
+\begin{tabular}{llrrrrrrr}
+\toprule
+\# & Method & PSNR$\uparrow$ & SSIM$\uparrow$ & a/b RMSE$\downarrow$ & L RMSE$\downarrow$ &
+LPIPS$\downarrow$ & FID$\downarrow$ & Train (h) \\
+\midrule
+1 & Hist.\ match + mean colour & 10.88 & 0.055 & \textbf{9.12} & 30.63 & 0.687 & 293.1 & 0 \\
+2 & Welsh~\cite{welsh2002transferring} & \textbf{14.15} & 0.210 & 9.22 & \textbf{20.78} & \textbf{0.665} & 266.1 & 0 \\
+3 & U-Net R50 (TTA) & 13.96 & \textbf{0.244} & 11.73 & 22.27 & 0.813 & 245.7 & \pend{h} \\
+4 & Pix2Pix~\cite{isola2017pix2pix} & \multicolumn{7}{c}{\pend{pending}} \\
+5 & CycleGAN~\cite{zhu2017cyclegan} & \multicolumn{7}{c}{\pend{pending}} \\
+6 & TransUNet~\cite{chen2021transunet} & \multicolumn{7}{c}{\pend{pending}} \\
+7 & Wavelet U-Net + FFL & \multicolumn{7}{c}{\pend{pending}} \\
+8 & DDPM-S (pixel, $K{=}1$) & 9.97 & 0.051 & 20.09 & 31.68 & 0.802 & -- & 2.5 \\
+\midrule
+9 & PICMA (ours), sample & 7.77 & 0.089 & 32.80 & 40.09 & 0.820 & \textbf{244.9} & 1.52 \\
+  & PICMA (ours), mean of $K{=}4$ & 11.10 & 0.186 & 19.70 & 29.09 & 0.783 & 258.9 & 1.52 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Table~\ref{tab:results} lists the finished runs. We note four findings.
+
+\textbf{No method beats a constant colour on a/b error.} The best a/b RMSE (9.12) belongs to
+histogram matching, whose a/b is just the mean training colour. Welsh transfer is close
+(9.22). The learned models are further away: the U-Net reaches 11.73, which is 2.6 worse
+than the mean colour. On scenes never seen in training, the SAR tile carries little
+information about the true colour that a model can use. A model that commits to a colour
+is penalised whenever the colour is wrong.
+
+\textbf{Structure is predictable from SAR; colour is not.} Welsh transfer and the U-Net cut
+the L RMSE from 30.63 (histogram match) to 20.78 and 22.27, and raise PSNR by about 3~dB.
+Brightness and layout therefore follow the radar, while colour does not. The U-Net has the
+best SSIM (0.244).
+
+\textbf{Perception versus distortion.} PICMA's single samples have the lowest FID (244.9),
+but the U-Net is only 0.8 behind (245.7). With 1{,}660 images this gap is within the noise of
+FID, so we do not claim a win. PICMA is the worst method on every pixel metric. Averaging four
+samples improves a/b RMSE from 32.80 to 19.70 and PSNR from 7.77 to 11.10~dB, but raises FID
+to 258.9. This is the trade-off of Blau and Michaeli~\cite{blau2018perception}: the average
+is more accurate per pixel and less realistic.
+
+\textbf{Both diffusion models are undertrained.} The large spread between PICMA's samples
+shows that, after 1~h, the denoiser does not yet follow the SAR condition closely. DDPM-S
+behaves the same way at 2.5~h (a/b RMSE 20.09). Its authors report outputs that look like
+satellite imagery but do not yet follow the SAR input. The PICMA budget was cut from the
+planned 9.3~h to 1~h (Section~V-B), so these rows show the method at an early stage of
+training. They do not show what the method can reach.
+
+\begin{figure*}[t]
+\centering
+\fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\small
+\pend{Person 5: comparison grid - rows = test tiles, columns = SAR $|$ each method $|$ real
+optical. Generate with \texttt{python scripts/bench_figure.py all\_results --out paper\_figs};
+it needs each run's \texttt{shown.npz} and \texttt{metrics\_test.json}, which are not yet in
+\texttt{all\_results/} (only logs were downloaded).}}}
+\caption{Qualitative comparison on held-out test tiles.}
+\label{fig:qual}
+\end{figure*}
+
+\subsection{Ablation}
+\pend{Person 2: ablation set (same 2~h each: full PICMA, w/o physics, w/o contrastive
+pretraining, w/o cross-attention). No ablation results received yet.}
+
+% =====================================================================================
+% Owner: Person 5
+\section{Discussion and Limitations}
+
+\begin{itemize}
+\item \textbf{Compute.} All learned models trained for hours on T4 GPUs, not for days on large
+  GPUs. The PICMA run with the full budget did not finish. Absolute numbers are therefore lower than those
+  in published papers.
+\item \textbf{Data.} We use VV polarisation only, and VH would help with vegetation. The dB scaling of the
+  8-bit tiles is an assumption. All test scenes are fall scenes, so seasonal generalisation
+  is untested.
+\item \textbf{Metric.} RMSE-type metrics reward the mean colour on an ill-posed task.
+  Perceptual metrics (LPIPS, FID) and visual inspection are needed alongside them. FID on
+  1{,}660 images is noisy.
+\end{itemize}
+\pend{Person 5: failure cases from the comparison figure; where diffusion helps.}
+
+% =====================================================================================
+\section{Conclusion}
+We presented PICMA, a latent diffusion model for SAR-to-optical translation. It uses the
+speckle model in its input and its loss, aligns the SAR encoder with the optical domain by
+contrastive pretraining, and reads SAR context through cross-attention. On a strict
+scene-held-out benchmark, no method beats a constant mean colour on a/b error. Classical
+statistics transfer leads on PSNR and LPIPS. PICMA, after only one hour of training, matches
+the best FID but is the worst on pixel accuracy. Future work is a training run with the full
+budget, the ablation study, VH polarisation, and multi-season test scenes.
+\pend{rewrite once all rows are in.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

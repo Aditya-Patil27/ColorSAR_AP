@@ -1,0 +1,28 @@
+[histmatch] device cuda  GPUs 2  config {'algo': 'histmatch', 'name': 'histmatch', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 0.0, 'pre_hours': 0.3, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': 'model3_run/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/histmatch', 'amp': True}
+16000 pairs -> train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']
+Downloading: "https://download.pytorch.org/models/alexnet-owt-7be5be79.pth" to /root/.cache/torch/hub/checkpoints/alexnet-owt-7be5be79.pth
+
+  0%|          | 0.00/233M [00:00<?, ?B/s]
+  4%|▍         | 9.12M/233M [00:00<00:02, 95.4MB/s]
+ 13%|█▎        | 30.2M/233M [00:00<00:01, 169MB/s] 
+ 22%|██▏       | 51.5M/233M [00:00<00:00, 194MB/s]
+ 31%|███       | 71.8M/233M [00:00<00:00, 200MB/s]
+ 40%|███▉      | 92.2M/233M [00:00<00:00, 206MB/s]
+ 48%|████▊     | 112M/233M [00:00<00:00, 207MB/s] 
+ 57%|█████▋    | 132M/233M [00:00<00:00, 202MB/s]
+ 65%|██████▌   | 152M/233M [00:00<00:00, 198MB/s]
+ 73%|███████▎  | 171M/233M [00:00<00:00, 196MB/s]
+ 81%|████████  | 189M/233M [00:01<00:00, 194MB/s]
+ 89%|████████▉ | 208M/233M [00:01<00:00, 193MB/s]
+ 98%|█████████▊| 228M/233M [00:01<00:00, 199MB/s]
+100%|██████████| 233M/233M [00:01<00:00, 196MB/s]
+Downloading: "https://github.com/toshas/torch-fidelity/releases/download/v0.2.0/weights-inception-2015-12-05-6726825d.pth" to /root/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth
+
+  0%|          | 0.00/91.2M [00:00<?, ?B/s]
+ 11%|█▏        | 10.4M/91.2M [00:00<00:00, 109MB/s]
+ 44%|████▍     | 40.2M/91.2M [00:00<00:00, 226MB/s]
+ 68%|██████▊   | 61.8M/91.2M [00:00<00:00, 207MB/s]
+ 90%|████████▉ | 81.6M/91.2M [00:00<00:00, 206MB/s]
+100%|██████████| 91.2M/91.2M [00:00<00:00, 210MB/s]
+[histmatch] test n=1660  PSNR 10.88  SSIM 0.0546  ab RMSE 9.12  L RMSE 30.63  LPIPS 0.6868  FID 293.0765075683594
+[histmatch] done: train 0.00 h, eval 1.4 min

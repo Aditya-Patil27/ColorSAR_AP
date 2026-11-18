@@ -1,0 +1,4 @@
+[unet_r50] device cuda  GPUs 2  config {'algo': 'unet_r50', 'name': 'unet_r50', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 0.0, 'pre_hours': 0.3, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': '/kaggle/input/notebooks/aditya32211/colorsar-train/results/m3_enc05/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/unet_r50', 'amp': True}
+16000 pairs -> train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']
+[unet_r50] test n=1660  PSNR 13.96  SSIM 0.2439  ab RMSE 11.73  L RMSE 22.27  LPIPS 0.8131  FID 245.7030792236328
+[unet_r50] done: train 0.00 h, eval 3.9 min

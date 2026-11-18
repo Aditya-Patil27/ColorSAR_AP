@@ -78,25 +78,57 @@ output (fair for LPIPS/FID). The average of 4 = blurrier, higher PSNR. Shows the
 perception-distortion trade-off with our own model.
 
 ## Results and metrics
+Final numbers (18 Nov, 1660 test tiles, 7 held-out scenes, all on 2x T4). Lower is better for
+RMSE/LPIPS/FID.
+
+| algorithm | PSNR | SSIM | ab RMSE | L RMSE | LPIPS | FID | train h |
+|---|---|---|---|---|---|---|---|
+| PICMA (ours), 1 sample | 7.77 | 0.089 | 32.80 | 40.09 | 0.820 | **244.9** | 1.52 |
+| PICMA (ours), mean of 4 | 11.10 | 0.186 | 19.70 | 29.09 | 0.783 | 258.9 | 1.52 |
+| histmatch | 10.88 | 0.055 | **9.12** | 30.63 | 0.687 | 293.1 | 0 |
+| welsh | **14.15** | 0.210 | 9.22 | **20.78** | **0.665** | 266.1 | 0 |
+| unet_r50 (our Model 3) | 13.96 | **0.244** | 11.73 | 22.27 | 0.813 | 245.7 | trained earlier |
+
+Teammates' rows (TransUNet, Wavelet U-Net, DDPM) get added when their results arrive.
+
 **Q: Your PSNR is lower than the U-Net's - so your model is worse?**
-No. PSNR rewards the average colour (blurry). The perception-distortion trade-off (Blau &
-Michaeli, CVPR 2018) proves no method can be best at both. We compare on LPIPS/FID for
-realism and report PSNR/SSIM honestly. (Say this only if the numbers show it.)
+On these numbers, yes, on almost every metric. Do not use the perception-distortion
+argument here: PICMA's LPIPS (0.820) is also worse than every baseline's. Its only lead is
+FID (244.9 vs 245.7 for the U-Net), and that gap is too small to call a win on 1660 images.
+Say it straight: the model is undertrained (next question) and we report it as it is.
+
+**Q: Why is PICMA so much worse than the baselines?**
+It got 1.5 h of training: 0.4 h contrastive pretraining and 1 h of diffusion, which is only
+8 epochs (5239 steps) for a 113M-parameter model. Diffusion models usually need far more
+steps than that. The parts we can check did work: contrastive pretraining reached in-batch
+top-1 = 1.00, so SAR and optical features do match. The colour head has not converged. A
+sign of that: averaging 4 samples cuts the colour error from 32.8 to 19.7, so the samples
+still disagree a lot on colour. Fix: the planned 9.3 h run (it was killed - see below).
 
 **Q: What is FID? Any limitation?**
 Distance between Inception-feature statistics of all generated vs. all real test images;
 lower = more realistic set. With 1660 images it is biased upwards - fine for comparing
 methods on the same test set, not comparable with papers using 50k images.
 
-**Q: Is the comparison fair? PICMA trained longest.**
-Same split, same test tiles, same scoring code. Training hours are in the table. The
-ablation runs all use the same 2 h budget, so component effects are fair. (If asked:
-baselines converge faster; given more time the gap may shrink - honest answer.)
+**Q: Is the comparison fair?**
+Same split, same test tiles, same scoring code, same GPU (2x T4) for every row. It is not
+fair *against* PICMA in time: histmatch and welsh need no training, and the U-Net (our
+Model 3) was trained earlier for hours, while PICMA got 1.5 h. Training hours are in the
+table.
+
+**Q: What happened to the longer PICMA runs?**
+- Planned 9.3 h run on 2x T4 (Kaggle): killed by the platform (exit -9, most likely out of
+  memory) at epoch 8, after ~4 h. Nothing was saved.
+- Two shorter runs on one H100 (Modal): both cancelled early (the second during contrastive
+  pretraining, at 0.34 h). Nothing was saved.
+- The backup run on 2x T4 (0.4 h + 1 h) finished. It is the only PICMA row, and it runs on
+  the same hardware as the baselines.
 
 **Q: How do you know each component helps?**
-Ablations: remove physics, contrastive pretraining, cross-attention one at a time with
-the same budget; the score drop shows each part's contribution. (Only if the ablation
-run was done - otherwise: "planned, limited GPU time".)
+We do not yet. Ablations (remove physics, contrastive pretraining, cross-attention one at a
+time, same 2 h each) are written and ready (`ablation` set in `kaggle/bench/run_bench.py`)
+but were not run: limited GPU time. What we can show: contrastive pretraining converges
+(top-1 = 1.00).
 
 ## Weak points - know them before they ask
 - dB scaling of the 8-bit SAR tiles (-25..0 dB) is an assumption about the dataset's
@@ -106,3 +138,7 @@ run was done - otherwise: "planned, limited GPU time".)
   than in papers with big GPUs.
 - FID on 1660 test images (see above).
 - Some baselines (classical ones) need no training; the GANs/U-Nets got ~2-4 h each.
+- PICMA is undertrained (1.5 h, 8 epochs). It loses to the simple baselines on PSNR, SSIM,
+  RMSE and LPIPS, and only ties on FID.
+- No ablation results; all longer PICMA runs failed (see "What happened to the longer
+  PICMA runs?").

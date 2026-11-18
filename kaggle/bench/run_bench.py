@@ -34,7 +34,7 @@ import sys
 import time
 
 MODE = "full"
-SET = "picma"
+SET = "picma_backup"
 WORK = "/kaggle/working/ColorSAR"
 RESULTS = "/kaggle/working/results"
 CACHE = "/kaggle/working/cache"
@@ -44,6 +44,11 @@ T0 = time.time()
 # job name -> (bench_run.py args, training hours, hours needed incl. data + eval).
 # Within a set the order is the priority: if the session runs short, the last jobs skip.
 SETS = {
+    # backup for the exam: the 9.3 h picma job was killed (exit -9) after ~1.1 h of diffusion
+    # training, so this one trains 1 h only and finishes in ~2.3 h
+    "picma_backup": [
+        ("picma", ["--algo", "picma", "--pre_hours", "0.4"], 1.0, 2.5),
+    ],
     "picma": [   # the proposed model first and longest; 1-3 only score on the test set
         ("picma", ["--algo", "picma", "--pre_hours", "0.4"], 9.3, 10.4),
         ("histmatch", ["--algo", "histmatch"], 0, 0.15),

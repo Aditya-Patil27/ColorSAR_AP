@@ -1,0 +1,87 @@
+{
+  "algo": "unet_r50",
+  "test_scenes": [
+    "ROIs1970_fall_115",
+    "ROIs1970_fall_121",
+    "ROIs1970_fall_124",
+    "ROIs1970_fall_133",
+    "ROIs1970_fall_27",
+    "ROIs1970_fall_32",
+    "ROIs1970_fall_67"
+  ],
+  "k_samples": 1,
+  "sample": {
+    "psnr": 13.958408548172331,
+    "ssim": 0.24394334620378522,
+    "ab_rmse": 11.7264650425279,
+    "L_rmse": 22.266304946520243,
+    "lpips": 0.8130850100373648,
+    "n": 1660,
+    "fid": 245.7030792236328,
+    "per_terrain": {
+      "agri": {
+        "psnr": 11.981494531688424,
+        "ssim": 0.3072043686962242,
+        "ab_rmse": 12.369968199329696,
+        "L_rmse": 26.75641773415984,
+        "lpips": 0.8120863317585677,
+        "n": 417
+      },
+      "barrenland": {
+        "psnr": 15.843900687640252,
+        "ssim": 0.2204975799525358,
+        "ab_rmse": 8.349880484363917,
+        "L_rmse": 17.472190986204026,
+        "lpips": 0.7428136771292333,
+        "n": 391
+      },
+      "grassland": {
+        "psnr": 14.616989142237527,
+        "ssim": 0.29720016640252156,
+        "ab_rmse": 16.65855730880873,
+        "L_rmse": 22.752903616508025,
+        "lpips": 0.8257474282005582,
+        "n": 449
+      },
+      "urban": {
+        "psnr": 13.440897460347415,
+        "ssim": 0.1418965371607551,
+        "ab_rmse": 8.841587420432798,
+        "L_rmse": 21.7294283291838,
+        "lpips": 0.8681895119084909,
+        "n": 403
+      }
+    }
+  },
+  "params": 43894852,
+  "best_epoch": 6,
+  "train_hours": 0.001074036161104838,
+  "config": {
+    "algo": "unet_r50",
+    "name": "unet_r50",
+    "root": "/kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2",
+    "out": "bench_out",
+    "cache": "/kaggle/working/cache",
+    "hours": 0.0,
+    "pre_hours": 0.3,
+    "epochs": 1000,
+    "bs": 16,
+    "n_train": 0,
+    "n_val": 0,
+    "n_test": 0,
+    "n_samples": 4,
+    "ddim_steps": 50,
+    "ckpt": "/kaggle/input/notebooks/aditya32211/colorsar-train/results/m3_enc05/model_3.pth",
+    "no_physics": false,
+    "no_contrastive": false,
+    "no_xattn": false,
+    "no_freq": false,
+    "phys_w": 0.05,
+    "freq_w": 1.0,
+    "aux_every": 4,
+    "smoke": false,
+    "seed": 42,
+    "dir": "bench_out/unet_r50",
+    "amp": true
+  }
+}

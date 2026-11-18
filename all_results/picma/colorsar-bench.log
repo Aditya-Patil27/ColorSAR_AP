@@ -1,0 +1,89 @@
+[{"stream_name":"stdout","time":1.070891494,"data":"$ /usr/bin/python3 -m pip install -q --no-deps lpips torch-fidelity\n"}
+,{"stream_name":"stdout","time":3.458138828,"data":"$ /usr/bin/python3 -c \"import diffusers\" || /usr/bin/python3 -m pip install -q diffusers\n"}
+,{"stream_name":"stdout","time":34.939783172,"data":"mode full | set picma | torch 2.11.0+cu130 | GPUs: ['Tesla T4', 'Tesla T4']\n"}
+,{"stream_name":"stdout","time":37.511243769000004,"data":"data: /kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2 | code: /kaggle/input/datasets/aditya32211/colorsar-code | model 3 checkpoint: /kaggle/input/notebooks/aditya32211/colorsar-train/results/m3_enc05/model_3.pth\n"}
+,{"stream_name":"stdout","time":37.977785504,"data":"\n"}
+,{"stream_name":"stdout","time":37.977814505,"data":"===== picma: --algo picma --pre_hours 0.4 --root /kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2 --cache /kaggle/working/cache --out bench_out --name picma --hours 9.3\n"}
+,{"stream_name":"stdout","time":40.793041333,"data":"[picma] device cuda  GPUs 2  config {'algo': 'picma', 'name': 'picma', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 9.3, 'pre_hours': 0.4, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': 'model3_run/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/picma', 'amp': True}\n"}
+,{"stream_name":"stdout","time":248.763898262,"data":"16000 pairs -\u003e train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']\n"}
+,{"stream_name":"stdout","time":250.847505336,"data":"Downloading: \"https://download.pytorch.org/models/resnet50-11ad3fa6.pth\" to /root/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth\n"}
+,{"stream_name":"stdout","time":250.949536421,"data":"\n"}
+,{"stream_name":"stdout","time":253.1964347,"data":"Downloading: \"https://download.pytorch.org/models/resnet18-f37072fd.pth\" to /root/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth\n"}
+,{"stream_name":"stdout","time":253.32233491,"data":"\n"}
+,{"stream_name":"stdout","time":320.284223612,"data":"[contrastive] epoch 1  InfoNCE 0.7801  in-batch top-1 0.78  (0.02 h)\n"}
+,{"stream_name":"stdout","time":380.489080645,"data":"[contrastive] epoch 2  InfoNCE 0.4656  in-batch top-1 0.89  (0.04 h)\n"}
+,{"stream_name":"stdout","time":441.12540511,"data":"[contrastive] epoch 3  InfoNCE 0.5307  in-batch top-1 0.89  (0.05 h)\n"}
+,{"stream_name":"stdout","time":501.851062782,"data":"[contrastive] epoch 4  InfoNCE 0.3022  in-batch top-1 0.92  (0.07 h)\n"}
+,{"stream_name":"stdout","time":561.957382883,"data":"[contrastive] epoch 5  InfoNCE 0.3240  in-batch top-1 0.89  (0.09 h)\n"}
+,{"stream_name":"stdout","time":622.136934998,"data":"[contrastive] epoch 6  InfoNCE 0.2298  in-batch top-1 0.94  (0.10 h)\n"}
+,{"stream_name":"stdout","time":682.258967971,"data":"[contrastive] epoch 7  InfoNCE 0.1898  in-batch top-1 0.97  (0.12 h)\n"}
+,{"stream_name":"stdout","time":742.664580175,"data":"[contrastive] epoch 8  InfoNCE 0.2740  in-batch top-1 0.92  (0.14 h)\n"}
+,{"stream_name":"stdout","time":802.903345633,"data":"[contrastive] epoch 9  InfoNCE 0.2050  in-batch top-1 0.95  (0.15 h)\n"}
+,{"stream_name":"stdout","time":862.861669224,"data":"[contrastive] epoch 10  InfoNCE 0.2004  in-batch top-1 0.98  (0.17 h)\n"}
+,{"stream_name":"stdout","time":923.996192787,"data":"[contrastive] epoch 11  InfoNCE 0.1739  in-batch top-1 0.98  (0.19 h)\n"}
+,{"stream_name":"stdout","time":986.255395457,"data":"[contrastive] epoch 12  InfoNCE 0.1775  in-batch top-1 0.95  (0.20 h)\n"}
+,{"stream_name":"stdout","time":1047.120553908,"data":"[contrastive] epoch 13  InfoNCE 0.1514  in-batch top-1 0.95  (0.22 h)\n"}
+,{"stream_name":"stdout","time":1107.799601136,"data":"[contrastive] epoch 14  InfoNCE 0.1240  in-batch top-1 1.00  (0.24 h)\n"}
+,{"stream_name":"stdout","time":1168.575166416,"data":"[contrastive] epoch 15  InfoNCE 0.0797  in-batch top-1 1.00  (0.25 h)\n"}
+,{"stream_name":"stdout","time":1228.758200695,"data":"[contrastive] epoch 16  InfoNCE 0.0857  in-batch top-1 1.00  (0.27 h)\n"}
+,{"stream_name":"stdout","time":1288.324752665,"data":"[contrastive] epoch 17  InfoNCE 0.1195  in-batch top-1 1.00  (0.29 h)\n"}
+,{"stream_name":"stdout","time":1347.923745493,"data":"[contrastive] epoch 18  InfoNCE 0.1313  in-batch top-1 0.98  (0.30 h)\n"}
+,{"stream_name":"stdout","time":1407.631125346,"data":"[contrastive] epoch 19  InfoNCE 0.1183  in-batch top-1 1.00  (0.32 h)\n"}
+,{"stream_name":"stdout","time":1467.501689647,"data":"[contrastive] epoch 20  InfoNCE 0.0728  in-batch top-1 0.98  (0.34 h)\n"}
+,{"stream_name":"stdout","time":1528.634895952,"data":"[contrastive] epoch 21  InfoNCE 0.0792  in-batch top-1 1.00  (0.35 h)\n"}
+,{"stream_name":"stdout","time":1589.947447112,"data":"[contrastive] epoch 22  InfoNCE 0.1474  in-batch top-1 0.98  (0.37 h)\n"}
+,{"stream_name":"stdout","time":1650.065066399,"data":"[contrastive] epoch 23  InfoNCE 0.1174  in-batch top-1 0.97  (0.39 h)\n"}
+,{"stream_name":"stdout","time":1693.921155028,"data":"[contrastive] epoch 24  InfoNCE 0.0952  in-batch top-1 0.98  (0.40 h)\n"}
+,{"stream_name":"stdout","time":1709.032700978,"data":"  warnings.warn(\n"}
+,{"stream_name":"stdout","time":2083.845418773,"data":"encoded 11877 training latents (4, 32, 32) in 369 s (std 0.745)\n"}
+,{"stream_name":"stdout","time":2570.300396104,"data":"epoch 1  eps-MSE 0.1929  aux 0.0000  step 742  (0.14 h)\n"}
+,{"stream_name":"stdout","time":3052.361692593,"data":"epoch 2  eps-MSE 0.0898  aux 0.0000  step 1484  (0.27 h)\n"}
+,{"stream_name":"stdout","time":3534.85995053,"data":"epoch 3  eps-MSE 0.3439  aux 0.0000  step 2226  (0.40 h)\n"}
+,{"stream_name":"stdout","time":4017.381346901,"data":"epoch 4  eps-MSE 0.0817  aux 0.0000  step 2968  (0.54 h)\n"}
+,{"stream_name":"stdout","time":4502.855834603,"data":"epoch 5  eps-MSE 0.0787  aux 0.0000  step 3710  (0.67 h)\n"}
+,{"stream_name":"stdout","time":4991.776577042,"data":"epoch 6  eps-MSE 0.1477  aux 0.0000  step 4452  (0.81 h)\n"}
+,{"stream_name":"stdout","time":5486.262418458,"data":"epoch 7  eps-MSE 0.1734  aux 0.0000  step 5194  (0.95 h)\n"}
+,{"stream_name":"stdout","time":5969.05202698,"data":"epoch 8  eps-MSE 0.2461  aux 0.0000  step 5936  (1.08 h)\n"}
+,{"stream_name":"stdout","time":14892.495749306,"data":"===== picma: exit -9 after 247.6 min (total 4.14 h)\n"}
+,{"stream_name":"stdout","time":14892.537465697,"data":"\n"}
+,{"stream_name":"stdout","time":14892.537497599,"data":"===== histmatch: --algo histmatch --root /kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2 --cache /kaggle/working/cache --out bench_out --name histmatch --hours 0\n"}
+,{"stream_name":"stdout","time":14904.043343724,"data":"[histmatch] device cuda  GPUs 2  config {'algo': 'histmatch', 'name': 'histmatch', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 0.0, 'pre_hours': 0.3, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': 'model3_run/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/histmatch', 'amp': True}\n"}
+,{"stream_name":"stdout","time":14922.256937262,"data":"16000 pairs -\u003e train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']\n"}
+,{"stream_name":"stdout","time":14927.653629871,"data":"Downloading: \"https://download.pytorch.org/models/alexnet-owt-7be5be79.pth\" to /root/.cache/torch/hub/checkpoints/alexnet-owt-7be5be79.pth\n"}
+,{"stream_name":"stdout","time":14927.820768943,"data":"\n"}
+,{"stream_name":"stdout","time":14947.555816022,"data":"Downloading: \"https://github.com/toshas/torch-fidelity/releases/download/v0.2.0/weights-inception-2015-12-05-6726825d.pth\" to /root/.cache/torch/hub/checkpoints/weights-inception-2015-12-05-6726825d.pth\n"}
+,{"stream_name":"stdout","time":14947.751770508,"data":"\n"}
+,{"stream_name":"stdout","time":15010.402165066,"data":"[histmatch] test n=1660  PSNR 10.88  SSIM 0.0546  ab RMSE 9.12  L RMSE 30.63  LPIPS 0.6868  FID 293.0765075683594\n"}
+,{"stream_name":"stdout","time":15010.402653137,"data":"[histmatch] done: train 0.00 h, eval 1.4 min\n"}
+,{"stream_name":"stdout","time":15016.474602827,"data":"===== histmatch: exit 0 after 2.1 min (total 4.17 h)\n"}
+,{"stream_name":"stdout","time":15016.476710703,"data":"\n"}
+,{"stream_name":"stdout","time":15016.476732642,"data":"===== welsh: --algo welsh --root /kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2 --cache /kaggle/working/cache --out bench_out --name welsh --hours 0\n"}
+,{"stream_name":"stdout","time":15018.48754422,"data":"[welsh] device cuda  GPUs 2  config {'algo': 'welsh', 'name': 'welsh', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 0.0, 'pre_hours': 0.3, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': 'model3_run/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/welsh', 'amp': True}\n"}
+,{"stream_name":"stdout","time":15019.885173996,"data":"16000 pairs -\u003e train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']\n"}
+,{"stream_name":"stdout","time":15084.16568572,"data":"[welsh] test n=1660  PSNR 14.15  SSIM 0.2102  ab RMSE 9.22  L RMSE 20.78  LPIPS 0.6647  FID 266.1457214355469\n"}
+,{"stream_name":"stdout","time":15084.166260117,"data":"[welsh] done: train 0.00 h, eval 1.0 min\n"}
+,{"stream_name":"stdout","time":15085.49760161,"data":"===== welsh: exit 0 after 1.2 min (total 4.19 h)\n"}
+,{"stream_name":"stdout","time":15085.49940107,"data":"\n"}
+,{"stream_name":"stdout","time":15085.499420054,"data":"===== unet_r50: --algo unet_r50 --ckpt /kaggle/input/notebooks/aditya32211/colorsar-train/results/m3_enc05/model_3.pth --root /kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2 --cache /kaggle/working/cache --out bench_out --name unet_r50 --hours 0\n"}
+,{"stream_name":"stdout","time":15087.560806586,"data":"[unet_r50] device cuda  GPUs 2  config {'algo': 'unet_r50', 'name': 'unet_r50', 'out': 'bench_out', 'cache': '/kaggle/working/cache', 'hours': 0.0, 'pre_hours': 0.3, 'epochs': 1000, 'bs': 16, 'n_train': 0, 'n_val': 0, 'n_test': 0, 'n_samples': 4, 'ddim_steps': 50, 'ckpt': '/kaggle/input/notebooks/aditya32211/colorsar-train/results/m3_enc05/model_3.pth', 'no_physics': False, 'no_contrastive': False, 'no_xattn': False, 'no_freq': False, 'phys_w': 0.05, 'freq_w': 1.0, 'aux_every': 4, 'smoke': False, 'seed': 42, 'dir': 'bench_out/unet_r50', 'amp': True}\n"}
+,{"stream_name":"stdout","time":15088.939049345,"data":"16000 pairs -\u003e train 11877  val 2463  test 1660  | test scenes ['ROIs1970_fall_115', 'ROIs1970_fall_121', 'ROIs1970_fall_124', 'ROIs1970_fall_133', 'ROIs1970_fall_27', 'ROIs1970_fall_32', 'ROIs1970_fall_67']\n"}
+,{"stream_name":"stdout","time":15324.114833256,"data":"[unet_r50] test n=1660  PSNR 13.96  SSIM 0.2439  ab RMSE 11.73  L RMSE 22.27  LPIPS 0.8131  FID 245.7030792236328\n"}
+,{"stream_name":"stdout","time":15324.115283367,"data":"[unet_r50] done: train 0.00 h, eval 3.9 min\n"}
+,{"stream_name":"stdout","time":15325.430752038,"data":"===== unet_r50: exit 0 after 4.0 min (total 4.26 h)\n"}
+,{"stream_name":"stdout","time":15325.453110254,"data":"\n"}
+,{"stream_name":"stdout","time":15325.453136777,"data":"done in 4.26 h\n"}
+,{"stream_name":"stdout","time":15325.453155933,"data":"# ColorSAR benchmark (full, set picma)\n"}
+,{"stream_name":"stdout","time":15325.45316133,"data":"\n"}
+,{"stream_name":"stdout","time":15325.453165998,"data":"| algorithm | PSNR | SSIM | ab RMSE | L RMSE | LPIPS | FID | train h | n |\n"}
+,{"stream_name":"stdout","time":15325.453170863,"data":"|---|---|---|---|---|---|---|---|---|\n"}
+,{"stream_name":"stdout","time":15325.453175682,"data":"| histmatch | 10.88 | 0.0546 | 9.12 | 30.63 | 0.6868 | 293.1 | 0.00 | 1660 |\n"}
+,{"stream_name":"stdout","time":15325.453180651,"data":"| unet_r50 | 13.96 | 0.2439 | 11.73 | 22.27 | 0.8131 | 245.7 | 0.00 | 1660 |\n"}
+,{"stream_name":"stdout","time":15325.453185588,"data":"| welsh | 14.15 | 0.2102 | 9.22 | 20.78 | 0.6647 | 266.1 | 0.00 | 1660 |\n"}
+,{"stream_name":"stdout","time":15325.453189873,"data":"\n"}
+,{"stream_name":"stderr","time":15327.952455037,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":15327.952484619,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":15328.212470069,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":15328.212499618,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":15328.97860139,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":15330.032819494,"data":"[NbConvertApp] Writing 314323 bytes to __results__.html\n"}
+]

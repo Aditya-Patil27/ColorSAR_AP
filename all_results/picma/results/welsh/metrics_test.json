@@ -1,0 +1,86 @@
+{
+  "algo": "welsh",
+  "test_scenes": [
+    "ROIs1970_fall_115",
+    "ROIs1970_fall_121",
+    "ROIs1970_fall_124",
+    "ROIs1970_fall_133",
+    "ROIs1970_fall_27",
+    "ROIs1970_fall_32",
+    "ROIs1970_fall_67"
+  ],
+  "k_samples": 1,
+  "sample": {
+    "psnr": 14.150557771742024,
+    "ssim": 0.21018770965915848,
+    "ab_rmse": 9.222031855008689,
+    "L_rmse": 20.780034868113965,
+    "lpips": 0.6646829745137548,
+    "n": 1660,
+    "fid": 266.1457214355469,
+    "per_terrain": {
+      "agri": {
+        "psnr": 12.849360286668675,
+        "ssim": 0.2611052828441135,
+        "ab_rmse": 9.285885210517499,
+        "L_rmse": 23.785231996211504,
+        "lpips": 0.6762900275292156,
+        "n": 417
+      },
+      "barrenland": {
+        "psnr": 16.204654712573067,
+        "ssim": 0.21232094369885868,
+        "ab_rmse": 10.664518488032739,
+        "L_rmse": 15.41207276219907,
+        "lpips": 0.65785520125533,
+        "n": 391
+      },
+      "grassland": {
+        "psnr": 13.628090416919065,
+        "ssim": 0.22569788229093785,
+        "ab_rmse": 9.758790335835752,
+        "L_rmse": 22.57264901694317,
+        "lpips": 0.6577562837133429,
+        "n": 449
+      },
+      "urban": {
+        "psnr": 14.086129210268469,
+        "ssim": 0.13815100980973422,
+        "ab_rmse": 7.158399893095712,
+        "L_rmse": 20.88133071965674,
+        "lpips": 0.6670144941315758,
+        "n": 403
+      }
+    }
+  },
+  "cells_filled": 242,
+  "train_hours": 0.00041690667470296226,
+  "config": {
+    "algo": "welsh",
+    "name": "welsh",
+    "root": "/kaggle/input/datasets/requiemonk/sentinel12-image-pairs-segregated-by-terrain/v_2",
+    "out": "bench_out",
+    "cache": "/kaggle/working/cache",
+    "hours": 0.0,
+    "pre_hours": 0.3,
+    "epochs": 1000,
+    "bs": 16,
+    "n_train": 0,
+    "n_val": 0,
+    "n_test": 0,
+    "n_samples": 4,
+    "ddim_steps": 50,
+    "ckpt": "model3_run/model_3.pth",
+    "no_physics": false,
+    "no_contrastive": false,
+    "no_xattn": false,
+    "no_freq": false,
+    "phys_w": 0.05,
+    "freq_w": 1.0,
+    "aux_every": 4,
+    "smoke": false,
+    "seed": 42,
+    "dir": "bench_out/welsh",
+    "amp": true
+  }
+}

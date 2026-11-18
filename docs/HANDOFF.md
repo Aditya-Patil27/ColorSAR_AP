@@ -1,15 +1,30 @@
 # Handoff - morning of 18 Nov 2026 (exam 9:30 AM, Room 4008)
 
-State when the session was closed (17 Nov, ~21:15 IST). Run the steps below in the
-`ColorSAR_AP` folder, on branch `benchmark`.
+**Updated 18 Nov 00:50 IST.** Run the steps below in the `ColorSAR_AP` folder, on branch
+`benchmark`.
+
+What changed overnight:
+- The first H100 run (`ap-BtrZuyqVSo2iC15NV7Zupw`) was cancelled at 21:28 IST, 40 min in.
+  Nothing was saved.
+- Kaggle `colorsar-bench` finished COMPLETE, but **PICMA was killed** (`exit -9` after
+  247.6 min, last line epoch 8 at 1.08 h, no Python error, likely out of memory). Nothing was
+  saved for PICMA. The baselines histmatch, welsh and unet_r50 are fine (n=1660). They are
+  already downloaded to `all_results/picma/results/`.
+- A new, shorter H100 run was started at 00:21 IST. It is now the **only** PICMA run.
+- `scripts/bench_figure.py` was tested on the baselines and on the H100 smoke output, and it
+  works.
 
 ## What is running in the cloud
 
 | Job | Where | Started | Expected end | Result location |
 |---|---|---|---|---|
-| PICMA, fair run (2x T4, 0.4 h + 9.3 h) | Kaggle kernel `aditya32211/colorsar-bench` (v2) | 20:08 IST | ~07:30 AM | kernel output `results/picma/` |
-| PICMA, long run (1x H100, 0.4 h + 6 h, batch 32) | Modal app `ap-BtrZuyqVSo2iC15NV7Zupw` (`colorsar-bench`) | ~20:50 IST | ~04:30 AM (hard stop 05:20) | volume `colorsar-results`, folder `full/picma_h100/` |
+| PICMA (1x H100, 0.4 h + 2 h, batch 32) | Modal app `ap-cAkxjOZ3HfTXMYuwuhoc4N` (`colorsar-bench`, detached) | 00:21 IST | ~04:00-04:20 AM (hard stop 04:51) | volume `colorsar-results`, folder `full/picma_h100/` |
+| PICMA backup (2x T4, 0.4 h + 1 h, batch 16) | Kaggle kernel `aditya32211/colorsar-bench` **v3** (set `picma_backup`) | 01:04 IST | ~03:30 AM | kernel output `results/picma/` |
 | Web app (Model 3 SAR + Model 1 grey) | Modal app `colorsar-demo` | deployed | stays on | https://app2732006--colorsar-demo-ui.us-east.modal.run |
+
+The H100 run first loads data for ~40 min with no log output. That is normal: the job reads
+2.6 GB of small files from the volume. The first log line after the config line is
+`[contrastive] epoch 1`.
 
 Teammates ran `freq` (TransUNet, Wavelet U-Net) and `ddpm` on their own Kaggle accounts -
 ask them for their `results/` folders.
@@ -19,18 +34,22 @@ ask them for their `results/` folders.
 ```
 # 1. Is the H100 run finished? (colorsar-bench gone from the running list = finished)
 python -m modal app list
-python -m modal app logs ap-BtrZuyqVSo2iC15NV7Zupw      # last lines: "[picma_h100] test n=1660 PSNR ..." = success
+python -m modal app logs ap-cAkxjOZ3HfTXMYuwuhoc4N      # last lines: "[picma_h100] test n=1660 PSNR ..." = success
 
-# 2. H100 results -> all_results/modal/picma_h100/
+# 2. H100 results -> all_results/modal/
 python -m modal volume get colorsar-results full all_results/modal
 
-# 3. Kaggle run finished? (status must be COMPLETE)
+# 3. Kaggle backup (v3) finished? The baselines from v2 are already in all_results/picma/.
+#    Download v3 into a NEW folder so it does not mix with v2:
 kaggle kernels status aditya32211/colorsar-bench
-kaggle kernels output aditya32211/colorsar-bench -p all_results/picma
+kaggle kernels output aditya32211/colorsar-bench -p all_results/picma_t4
 
 # 4. Copy the teammates' results/ folders into all_results/ (any sub-folder names), then:
 python scripts/bench_figure.py all_results --out paper_figs
 ```
+
+On Windows, if a `modal` command fails with a `charmap` error, run
+`$env:PYTHONUTF8='1'` first.
 
 Step 4 writes `paper_figs/results.md`, `results.tex`, `comparison.png/.pdf`. It prints
 `missing: ...` for every algorithm it did not find - that is fine, the table just has fewer rows.
@@ -40,12 +59,16 @@ Then:
 - fill the `[PENDING]` numbers in `docs/PROJECT_BRIEF.md` (video script + revision) from
   `results.md` - never write a number that is not in that file.
 
-## How to report the two PICMA rows
+## How to report PICMA
 
-- **"PICMA (ours)"** = Kaggle 2x T4 run - same hardware as the baselines, this is the fair
-  comparison row.
-- **"PICMA (ours, 1xH100)"** = Modal run - different GPU, more training steps. Report it as an
-  extra row and say so; do not replace the fair row with it.
+- If the Kaggle backup finished, its row is **"PICMA (ours)"**: 1 h of training on 2x T4, the
+  same hardware as the baselines. This is the same-hardware row.
+- The H100 row is **"PICMA (ours, 1xH100)"**: 2 h of training on one H100. If only this run
+  finished, it is the only PICMA row. The baselines ran on 2x T4.
+- Say this openly. The data split, the 1660 test tiles and the scoring code are the same for
+  every method. Only the GPU is different. The planned T4 run was killed by the platform
+  (out of memory) before it finished.
+- Do not call the H100 row the "fair" or "same hardware" comparison.
 
 ## If something failed
 
